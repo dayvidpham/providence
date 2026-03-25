@@ -228,13 +228,6 @@ func (t *sqliteTracker) seedReferenceData() error {
 	return nil
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // ---------------------------------------------------------------------------
 // graphStore — implements dgraph.Store[string, Task]
 // ---------------------------------------------------------------------------
