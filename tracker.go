@@ -3,18 +3,16 @@ package providence
 // tracker.go contains the sqliteTracker implementation of the Tracker interface.
 //
 // Architecture: Types live in pkg/ptypes (no dependencies). The SQL persistence
-// layer lives in internal/sqlite (imports only pkg/ptypes + zombiezen sqlite).
-// This root package imports both, so there is no import cycle.
-//
-// The graphStore (dgraph.Store) adapter remains here because it needs access to
-// both the sqliteTracker (for its graph field) and internal/sqlite (for SQL).
-// Graph traversal methods (Ancestors, Descendants) also remain here since they
-// use the dgraph library directly.
+// layer lives in internal/sqlite. The graph store adapter lives in
+// internal/graph. Graph traversal helpers live in internal/helpers.
+// This root package imports all of them and wires them together.
 
 import (
 	"fmt"
 	"time"
 
+	intgraph "github.com/dayvidpham/providence/internal/graph"
+	"github.com/dayvidpham/providence/internal/helpers"
 	dbsqlite "github.com/dayvidpham/providence/internal/sqlite"
 	dgraph "github.com/dominikbraun/graph"
 	"github.com/google/uuid"
@@ -25,14 +23,10 @@ import (
 // ---------------------------------------------------------------------------
 
 // sqliteTracker is the canonical implementation of Tracker.
-// The db field holds the internal/sqlite.DB for all SQL operations.
-// The graph field is a blocked-by graph used for cycle prevention and
-// traversal; its store reads/writes via the same DB.
+// It delegates SQL to internal/sqlite, graph operations to internal/graph,
+// and traversal to internal/helpers.
 type sqliteTracker struct {
-	db *dbsqlite.DB
-	// graph is a directed, cycle-preventing dgraph over task ID strings.
-	// Vertices are task ID wire strings; the vertex value type is Task.
-	// The store delegates to the same SQLite connection via db.
+	db    *dbsqlite.DB
 	graph dgraph.Graph[string, Task]
 }
 
@@ -44,146 +38,10 @@ func openTracker(dbPath string) (Tracker, error) {
 		return nil, fmt.Errorf("providence.openTracker: %w", err)
 	}
 
-	t := &sqliteTracker{db: db}
-
-	// Construct the blocked-by graph backed by the same connection.
-	store := &graphStore{t: t}
-	t.graph = dgraph.NewWithStore(
-		func(task Task) string { return task.ID.String() },
-		store,
-		dgraph.Directed(),
-		dgraph.PreventCycles(),
-	)
-
-	return t, nil
-}
-
-// ---------------------------------------------------------------------------
-// graphStore — implements dgraph.Store[string, Task]
-// ---------------------------------------------------------------------------
-
-// graphStore implements dgraph.Store[string, Task] for the blocked-by subgraph.
-// It delegates all persistence to the sqliteTracker's internal/sqlite.DB.
-type graphStore struct {
-	t *sqliteTracker
-}
-
-var _ dgraph.Store[string, Task] = (*graphStore)(nil)
-
-func (s *graphStore) AddVertex(hash string, value Task, _ dgraph.VertexProperties) error {
-	if hash != value.ID.String() {
-		return fmt.Errorf(
-			"graphStore.AddVertex: hash %q does not match task ID %q — "+
-				"the hash function must return task.ID.String()",
-			hash, value.ID.String(),
-		)
-	}
-	return s.t.db.InsertTask(value)
-}
-
-func (s *graphStore) Vertex(hash string) (Task, dgraph.VertexProperties, error) {
-	id, err := ParseTaskID(hash)
-	if err != nil {
-		return Task{}, dgraph.VertexProperties{}, fmt.Errorf(
-			"graphStore.Vertex: cannot parse hash %q as TaskID: %w", hash, err,
-		)
-	}
-	task, found, err := s.t.db.GetTask(id)
-	if err != nil {
-		return Task{}, dgraph.VertexProperties{}, fmt.Errorf(
-			"graphStore.Vertex: failed to get task %q: %w", hash, err,
-		)
-	}
-	if !found {
-		return Task{}, dgraph.VertexProperties{}, dgraph.ErrVertexNotFound
-	}
-	return task, dgraph.VertexProperties{}, nil
-}
-
-func (s *graphStore) RemoveVertex(_ string) error {
-	return fmt.Errorf(
-		"graphStore.RemoveVertex: not implemented — " +
-			"close the task via CloseTask instead of deleting it",
-	)
-}
-
-func (s *graphStore) ListVertices() ([]string, error) {
-	tasks, err := s.t.db.ListTasks(ListFilter{})
-	if err != nil {
-		return nil, fmt.Errorf("graphStore.ListVertices: %w", err)
-	}
-	hashes := make([]string, len(tasks))
-	for i, task := range tasks {
-		hashes[i] = task.ID.String()
-	}
-	return hashes, nil
-}
-
-func (s *graphStore) VertexCount() (int, error) {
-	hashes, err := s.ListVertices()
-	if err != nil {
-		return 0, fmt.Errorf("graphStore.VertexCount: %w", err)
-	}
-	return len(hashes), nil
-}
-
-func (s *graphStore) AddEdge(sourceHash, targetHash string, _ dgraph.Edge[string]) error {
-	srcID, err := ParseTaskID(sourceHash)
-	if err != nil {
-		return fmt.Errorf("graphStore.AddEdge: invalid source hash %q: %w", sourceHash, err)
-	}
-	return s.t.db.InsertEdge(srcID, targetHash, EdgeBlockedBy, time.Now().UTC())
-}
-
-func (s *graphStore) UpdateEdge(sourceHash, targetHash string, _ dgraph.Edge[string]) error {
-	_, err := s.Edge(sourceHash, targetHash)
-	return err
-}
-
-func (s *graphStore) RemoveEdge(sourceHash, targetHash string) error {
-	srcID, err := ParseTaskID(sourceHash)
-	if err != nil {
-		return fmt.Errorf("graphStore.RemoveEdge: invalid source hash %q: %w", sourceHash, err)
-	}
-	return s.t.db.DeleteEdge(srcID, targetHash, EdgeBlockedBy)
-}
-
-func (s *graphStore) Edge(sourceHash, targetHash string) (dgraph.Edge[string], error) {
-	srcID, err := ParseTaskID(sourceHash)
-	if err != nil {
-		return dgraph.Edge[string]{}, fmt.Errorf("graphStore.Edge: invalid source hash %q: %w", sourceHash, err)
-	}
-	kind := EdgeBlockedBy
-	edges, err := s.t.db.GetEdges(srcID, &kind)
-	if err != nil {
-		return dgraph.Edge[string]{}, fmt.Errorf("graphStore.Edge: %w", err)
-	}
-	for _, e := range edges {
-		if e.TargetID == targetHash {
-			return dgraph.Edge[string]{
-				Source:     sourceHash,
-				Target:     targetHash,
-				Properties: dgraph.EdgeProperties{Attributes: map[string]string{}},
-			}, nil
-		}
-	}
-	return dgraph.Edge[string]{}, dgraph.ErrEdgeNotFound
-}
-
-func (s *graphStore) ListEdges() ([]dgraph.Edge[string], error) {
-	edges, err := s.t.db.GetBlockedByEdges()
-	if err != nil {
-		return nil, fmt.Errorf("graphStore.ListEdges: %w", err)
-	}
-	result := make([]dgraph.Edge[string], len(edges))
-	for i, e := range edges {
-		result[i] = dgraph.Edge[string]{
-			Source:     e.SourceID,
-			Target:     e.TargetID,
-			Properties: dgraph.EdgeProperties{Attributes: map[string]string{}},
-		}
-	}
-	return result, nil
+	return &sqliteTracker{
+		db:    db,
+		graph: intgraph.NewGraph(db),
+	}, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -192,9 +50,7 @@ func (s *graphStore) ListEdges() ([]dgraph.Edge[string], error) {
 
 func (t *sqliteTracker) Close() error {
 	if err := t.db.Close(); err != nil {
-		return fmt.Errorf(
-			"providence.Tracker.Close: %w", err,
-		)
+		return fmt.Errorf("providence.Tracker.Close: %w", err)
 	}
 	return nil
 }
@@ -225,7 +81,6 @@ func (t *sqliteTracker) Create(namespace, title, description string, taskType Ta
 		UpdatedAt:   now,
 	}
 
-	// AddVertex calls graphStore.AddVertex → db.InsertTask.
 	if err := t.graph.AddVertex(task); err != nil {
 		return Task{}, fmt.Errorf(
 			"providence.Tracker.Create: failed to insert task %q: %w — "+
@@ -385,86 +240,12 @@ func (t *sqliteTracker) DepTree(id TaskID) ([]Edge, error) {
 	return edges, nil
 }
 
-// Ancestors returns all tasks that transitively block the given task.
-// In the blocked-by graph, A->B means "A is blocked by B". Ancestors of A
-// are B and everything B transitively waits for (outgoing adjacency DFS).
 func (t *sqliteTracker) Ancestors(id TaskID) ([]Task, error) {
-	adjacency, err := t.graph.AdjacencyMap()
-	if err != nil {
-		return nil, fmt.Errorf(
-			"providence.Tracker.Ancestors: failed to compute adjacency map for task %q: %w",
-			id.String(), err,
-		)
-	}
-
-	var ids []TaskID
-	visited := make(map[string]bool)
-	var dfs func(cur string)
-	dfs = func(cur string) {
-		for adj := range adjacency[cur] {
-			if !visited[adj] {
-				visited[adj] = true
-				if tid, err := ParseTaskID(adj); err == nil {
-					ids = append(ids, tid)
-				}
-				dfs(adj)
-			}
-		}
-	}
-	dfs(id.String())
-
-	tasks := make([]Task, 0, len(ids))
-	for _, tid := range ids {
-		task, found, err := t.db.GetTask(tid)
-		if err != nil {
-			return nil, fmt.Errorf("providence.Tracker.Ancestors: failed to resolve task %q: %w", tid.String(), err)
-		}
-		if found {
-			tasks = append(tasks, task)
-		}
-	}
-	return tasks, nil
+	return helpers.Ancestors(t.graph, t.db, id)
 }
 
-// Descendants returns all tasks that are transitively waiting for the given
-// task. In the blocked-by graph, A->B means "A is blocked by B". Descendants
-// of B are A and everything that transitively depends on A (predecessor DFS).
 func (t *sqliteTracker) Descendants(id TaskID) ([]Task, error) {
-	predecessors, err := t.graph.PredecessorMap()
-	if err != nil {
-		return nil, fmt.Errorf(
-			"providence.Tracker.Descendants: failed to compute predecessor map for task %q: %w",
-			id.String(), err,
-		)
-	}
-
-	var ids []TaskID
-	visited := make(map[string]bool)
-	var dfs func(cur string)
-	dfs = func(cur string) {
-		for pred := range predecessors[cur] {
-			if !visited[pred] {
-				visited[pred] = true
-				if tid, err := ParseTaskID(pred); err == nil {
-					ids = append(ids, tid)
-				}
-				dfs(pred)
-			}
-		}
-	}
-	dfs(id.String())
-
-	tasks := make([]Task, 0, len(ids))
-	for _, tid := range ids {
-		task, found, err := t.db.GetTask(tid)
-		if err != nil {
-			return nil, fmt.Errorf("providence.Tracker.Descendants: failed to resolve task %q: %w", tid.String(), err)
-		}
-		if found {
-			tasks = append(tasks, task)
-		}
-	}
-	return tasks, nil
+	return helpers.Descendants(t.graph, t.db, id)
 }
 
 // ---------------------------------------------------------------------------
