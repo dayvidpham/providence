@@ -8,7 +8,10 @@ package providence
 // same type. Constants are re-declared with the same values. Sentinel errors
 // and parse functions are re-exported as package-level vars/funcs.
 
-import "github.com/dayvidpham/providence/pkg/ptypes"
+import (
+	"github.com/dayvidpham/providence/pkg/namespace"
+	"github.com/dayvidpham/providence/pkg/ptypes"
+)
 
 // ---------------------------------------------------------------------------
 // Type aliases (transparent — identical to the ptypes originals)
@@ -182,3 +185,24 @@ func ParseActivityID(s string) (ActivityID, error) {
 func ParseCommentID(s string) (CommentID, error) {
 	return ptypes.ParseCommentID(s)
 }
+
+// ---------------------------------------------------------------------------
+// Namespace re-exports
+// ---------------------------------------------------------------------------
+
+// DefaultNamespace derives a namespace URI from the current git repo's
+// remote URL, falling back to a file:// URI of the working directory.
+// See namespace.DefaultNamespace for full documentation.
+var DefaultNamespace = namespace.DefaultNamespace
+
+// FromGitRemote normalizes a git remote URL to a canonical HTTPS URI.
+// See namespace.FromGitRemote for full documentation.
+var FromGitRemote = namespace.FromGitRemote
+
+// FromDirectory returns a file:// URI for the given directory path.
+// See namespace.FromDirectory for full documentation.
+var FromDirectory = namespace.FromDirectory
+
+// ErrNoRemote is returned by FromGitRemote when the remote URL is empty.
+// See namespace.ErrNoRemote for full documentation.
+var ErrNoRemote = namespace.ErrNoRemote
