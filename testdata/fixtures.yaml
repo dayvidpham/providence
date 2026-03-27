@@ -1,0 +1,77 @@
+# Combinatorial Test Fixtures for Tracker.Create
+# ================================================
+#
+# Axes are expanded into permutation test cases by the Go test harness.
+# For Create: task_types × priorities × phases → test case
+#
+# Total success permutations: 5 task_types × 5 priorities × 13 phases = 325
+# Plus namespace error cases: 3
+
+create:
+
+  # Axis 1: TaskType (5 values, iota order)
+  task_types:
+    - name: bug
+      value: 0
+    - name: feature
+      value: 1
+    - name: task
+      value: 2
+    - name: epic
+      value: 3
+    - name: chore
+      value: 4
+
+  # Axis 2: Priority (5 values, iota order)
+  priorities:
+    - name: critical
+      value: 0
+    - name: high
+      value: 1
+    - name: medium
+      value: 2
+    - name: low
+      value: 3
+    - name: backlog
+      value: 4
+
+  # Axis 3: Phase (13 values, iota order)
+  phases:
+    - name: request
+      value: 0
+    - name: elicit
+      value: 1
+    - name: propose
+      value: 2
+    - name: review
+      value: 3
+    - name: plan_uat
+      value: 4
+    - name: ratify
+      value: 5
+    - name: handoff
+      value: 6
+    - name: impl_plan
+      value: 7
+    - name: worker_slices
+      value: 8
+    - name: code_review
+      value: 9
+    - name: impl_uat
+      value: 10
+    - name: landing
+      value: 11
+    - name: unscoped
+      value: 12
+
+  # Namespace validation cases
+  namespace_cases:
+    - name: empty_namespace
+      value: ""
+      expect_error: true
+    - name: simple_namespace
+      value: "test-ns"
+      expect_error: false
+    - name: uri_namespace
+      value: "https://github.com/user/repo"
+      expect_error: false

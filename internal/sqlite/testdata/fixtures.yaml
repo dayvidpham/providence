@@ -1,0 +1,526 @@
+# Combinatorial Test Fixtures for internal/sqlite
+# ================================================
+#
+# Five targets with YAML-driven permutation test cases.
+#
+# Target 1: UpdateTask — 7 UpdateFields pointer fields, dynamic SET clause
+# Target 2: ListTasks — 6 ListFilter fields, dynamic WHERE clause
+# Target 3: RegisterMLAgent — Role × Provider × model_state cross-product
+# Target 4: StartActivity — Phase × Stage × notes cross-product (13×4×2 = 104)
+# Target 5: AgentKindMismatch — 3 getter functions × 3 agent kinds (3×3 = 9)
+
+# =================================
+# Target 1: UpdateTask permutations
+# =================================
+#
+# update_field_sets defines which UpdateFields pointer fields are set.
+# Each case names the fields that are non-nil. The test creates a task,
+# applies the update, re-fetches, and verifies all changed fields.
+#
+# Field name → column mapping:
+#   title       → title (string)
+#   description → description (string)
+#   status      → status_id (int: 0=open, 1=in_progress, 2=closed)
+#   priority    → priority_id (int: 0=critical, 1=high, 2=medium, 3=low, 4=backlog)
+#   phase       → phase_id (int: 0=request … 12=unscoped)
+#   notes       → notes (string)
+#   owner       → owner_id (set from a pre-registered human agent)
+
+update_task:
+  update_field_sets:
+    - name: all_fields
+      description: "All 7 fields set"
+      fields:
+        - title
+        - description
+        - status
+        - priority
+        - phase
+        - notes
+        - owner
+
+    - name: no_fields
+      description: "No optional fields set — only updated_at changes"
+      fields: []
+
+    - name: title_only
+      description: "Single string field"
+      fields:
+        - title
+
+    - name: status_only
+      description: "Single enum field"
+      fields:
+        - status
+
+    - name: priority_only
+      description: "Single enum field"
+      fields:
+        - priority
+
+    - name: phase_only
+      description: "Single enum field"
+      fields:
+        - phase
+
+    - name: description_only
+      description: "Single string field"
+      fields:
+        - description
+
+    - name: notes_only
+      description: "Single string field"
+      fields:
+        - notes
+
+    - name: owner_only
+      description: "Single foreign-key field"
+      fields:
+        - owner
+
+    - name: strings_only
+      description: "All string fields (title, description, notes)"
+      fields:
+        - title
+        - description
+        - notes
+
+    - name: enums_only
+      description: "All enum fields (status, priority, phase)"
+      fields:
+        - status
+        - priority
+        - phase
+
+    - name: status_and_priority
+      description: "Two enum fields"
+      fields:
+        - status
+        - priority
+
+    - name: title_and_phase
+      description: "One string + one enum"
+      fields:
+        - title
+        - phase
+
+    - name: description_and_status
+      description: "One string + one enum"
+      fields:
+        - description
+        - status
+
+    - name: title_status_priority
+      description: "Mixed three fields"
+      fields:
+        - title
+        - status
+        - priority
+
+    - name: notes_phase_owner
+      description: "Mixed three fields including owner"
+      fields:
+        - notes
+        - phase
+        - owner
+
+    - name: title_description_status_priority
+      description: "Four fields"
+      fields:
+        - title
+        - description
+        - status
+        - priority
+
+    - name: status_phase_notes
+      description: "Two enums + notes"
+      fields:
+        - status
+        - phase
+        - notes
+
+  # Values used when setting each field.
+  # These are distinct from the default task values (open=0, medium=2, unscoped=12).
+  field_values:
+    title: "Updated Title"
+    description: "Updated description"
+    # status: 1 = in_progress (default task starts at 0=open)
+    status: 1
+    # priority: 0 = critical (default task starts at 2=medium)
+    priority: 0
+    # phase: 3 = review (default task starts at 12=unscoped)
+    phase: 3
+    notes: "Updated notes"
+    # owner: will be registered in the test as a human agent
+
+# =================================
+# Target 2: ListTasks permutations
+# =================================
+#
+# list_filter_sets defines which ListFilter fields are set.
+# The test seeds a known set of tasks and verifies that each filter
+# returns the correct subset.
+#
+# Seeded tasks (created fresh per sub-test):
+#   task_a: status=0(open),    priority=0(critical), type=0(bug),     phase=0(request),  namespace="ns-a", label="epic:x"
+#   task_b: status=1(in_prog), priority=2(medium),   type=1(feature), phase=3(review),   namespace="ns-b", label="epic:y"
+#   task_c: status=0(open),    priority=1(high),     type=0(bug),     phase=0(request),  namespace="ns-a", label="epic:x"
+#   task_d: status=2(closed),  priority=4(backlog),  type=2(task),    phase=8(worker_slices), namespace="ns-c", (no label)
+
+list_tasks:
+  seed_tasks:
+    - name: task_a
+      namespace: "ns-a"
+      title: "Task A"
+      status: 0
+      priority: 0
+      type: 0
+      phase: 0
+      label: "epic:x"
+
+    - name: task_b
+      namespace: "ns-b"
+      title: "Task B"
+      status: 1
+      priority: 2
+      type: 1
+      phase: 3
+      label: "epic:y"
+
+    - name: task_c
+      namespace: "ns-a"
+      title: "Task C"
+      status: 0
+      priority: 1
+      type: 0
+      phase: 0
+      label: "epic:x"
+
+    - name: task_d
+      namespace: "ns-c"
+      title: "Task D"
+      status: 2
+      priority: 4
+      type: 2
+      phase: 8
+      label: ""
+
+  filter_sets:
+    - name: no_filters
+      description: "Empty filter returns all 4 tasks"
+      filter: {}
+      expected_tasks:
+        - task_a
+        - task_b
+        - task_c
+        - task_d
+
+    - name: status_open
+      description: "Filter by status=0 (open) — returns task_a, task_c"
+      filter:
+        status: 0
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: status_in_progress
+      description: "Filter by status=1 (in_progress) — returns task_b"
+      filter:
+        status: 1
+      expected_tasks:
+        - task_b
+
+    - name: status_closed
+      description: "Filter by status=2 (closed) — returns task_d"
+      filter:
+        status: 2
+      expected_tasks:
+        - task_d
+
+    - name: priority_critical
+      description: "Filter by priority=0 (critical) — returns task_a"
+      filter:
+        priority: 0
+      expected_tasks:
+        - task_a
+
+    - name: priority_high
+      description: "Filter by priority=1 (high) — returns task_c"
+      filter:
+        priority: 1
+      expected_tasks:
+        - task_c
+
+    - name: priority_backlog
+      description: "Filter by priority=4 (backlog) — returns task_d"
+      filter:
+        priority: 4
+      expected_tasks:
+        - task_d
+
+    - name: type_bug
+      description: "Filter by type=0 (bug) — returns task_a, task_c"
+      filter:
+        type: 0
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: type_feature
+      description: "Filter by type=1 (feature) — returns task_b"
+      filter:
+        type: 1
+      expected_tasks:
+        - task_b
+
+    - name: type_task
+      description: "Filter by type=2 (task) — returns task_d"
+      filter:
+        type: 2
+      expected_tasks:
+        - task_d
+
+    - name: phase_request
+      description: "Filter by phase=0 (request) — returns task_a, task_c"
+      filter:
+        phase: 0
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: phase_worker_slices
+      description: "Filter by phase=8 (worker_slices) — returns task_d"
+      filter:
+        phase: 8
+      expected_tasks:
+        - task_d
+
+    - name: namespace_ns_a
+      description: "Filter by namespace=ns-a — returns task_a, task_c"
+      filter:
+        namespace: "ns-a"
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: namespace_ns_b
+      description: "Filter by namespace=ns-b — returns task_b"
+      filter:
+        namespace: "ns-b"
+      expected_tasks:
+        - task_b
+
+    - name: namespace_ns_c
+      description: "Filter by namespace=ns-c — returns task_d"
+      filter:
+        namespace: "ns-c"
+      expected_tasks:
+        - task_d
+
+    - name: label_epic_x
+      description: "Filter by label=epic:x — returns task_a, task_c"
+      filter:
+        label: "epic:x"
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: label_epic_y
+      description: "Filter by label=epic:y — returns task_b"
+      filter:
+        label: "epic:y"
+      expected_tasks:
+        - task_b
+
+    - name: status_and_priority
+      description: "status=0 AND priority=0 — returns task_a only"
+      filter:
+        status: 0
+        priority: 0
+      expected_tasks:
+        - task_a
+
+    - name: status_and_type
+      description: "status=0 AND type=0 — returns task_a, task_c"
+      filter:
+        status: 0
+        type: 0
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: type_and_phase
+      description: "type=0 AND phase=0 — returns task_a, task_c"
+      filter:
+        type: 0
+        phase: 0
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: namespace_and_label
+      description: "namespace=ns-a AND label=epic:x — returns task_a, task_c"
+      filter:
+        namespace: "ns-a"
+        label: "epic:x"
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: status_and_namespace
+      description: "status=0 AND namespace=ns-a — returns task_a, task_c"
+      filter:
+        status: 0
+        namespace: "ns-a"
+      expected_tasks:
+        - task_a
+        - task_c
+
+    - name: priority_and_label
+      description: "priority=0 AND label=epic:x — returns task_a"
+      filter:
+        priority: 0
+        label: "epic:x"
+      expected_tasks:
+        - task_a
+
+    - name: all_enums
+      description: "status=0, priority=0, type=0, phase=0 — returns task_a"
+      filter:
+        status: 0
+        priority: 0
+        type: 0
+        phase: 0
+      expected_tasks:
+        - task_a
+
+    - name: all_filters
+      description: "All 6 filters — returns task_a"
+      filter:
+        status: 0
+        priority: 0
+        type: 0
+        phase: 0
+        namespace: "ns-a"
+        label: "epic:x"
+      expected_tasks:
+        - task_a
+
+    - name: no_matches
+      description: "status=1 AND priority=0 — no tasks match"
+      filter:
+        status: 1
+        priority: 0
+      expected_tasks: []
+
+# ==========================================
+# Target 3: RegisterMLAgent permutations
+# ==========================================
+#
+# Cross-product of roles × providers × model_states.
+# Seeded ml_models (from db.go seedReferenceData):
+#   id=0: provider_id=0 (anthropic), name="claude_opus_4"
+#   id=1: provider_id=0 (anthropic), name="claude_sonnet_4"
+#   id=2: provider_id=0 (anthropic), name="claude_haiku_4"
+#
+# providers: 0=anthropic, 1=google, 2=openai, 3=local
+# roles: 0=human, 1=architect, 2=supervisor, 3=worker, 4=reviewer
+
+register_ml_agent:
+  roles:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+
+  # Known (provider_id, model_name) pairs seeded at DB creation time.
+  # Registering with these must succeed.
+  known_models:
+    - provider: 0
+      name: "claude_opus_4"
+    - provider: 0
+      name: "claude_sonnet_4"
+    - provider: 0
+      name: "claude_haiku_4"
+
+  # Unknown (provider, model_name) pairs that must return ErrNotFound.
+  unknown_models:
+    - provider: 1
+      name: "gemini_pro"
+      description: "Unknown Google model"
+    - provider: 2
+      name: "gpt4"
+      description: "Unknown OpenAI model"
+    - provider: 3
+      name: "llama3"
+      description: "Unknown local model"
+    - provider: 0
+      name: "claude_nonexistent"
+      description: "Unknown Anthropic model name"
+
+# ==========================================
+# Target 4: StartActivity permutations
+# ==========================================
+#
+# All 13 phases × all 4 stages × 2 note variants = 104 cases.
+# phases: 0=request, 1=elicit, 2=propose, 3=review, 4=plan_uat,
+#         5=ratify, 6=handoff, 7=impl_plan, 8=worker_slices,
+#         9=code_review, 10=impl_uat, 11=landing, 12=unscoped
+# stages: 0=not_started, 1=in_progress, 2=blocked, 3=complete
+
+start_activity:
+  phases:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+
+  stages:
+    - 0
+    - 1
+    - 2
+    - 3
+
+  note_variants:
+    - name: empty
+      value: ""
+    - name: with_note
+      value: "test note for activity"
+
+# ==========================================
+# Target 5: AgentKindMismatch permutations
+# ==========================================
+#
+# 3 agent kinds × 3 getter functions = 9 cases.
+# Matching kind → getter should succeed.
+# Mismatched kind → getter should return ErrNotFound.
+#
+# agent_kinds: human (0), ml (1), software (2)
+# getters: GetHumanAgent, GetMLAgent, GetSoftwareAgent
+
+agent_kind_mismatch:
+  agent_kinds:
+    - name: human
+      kind: 0
+    - name: ml
+      kind: 1
+    - name: software
+      kind: 2
+
+  getter_functions:
+    - name: GetHumanAgent
+      kind: 0
+    - name: GetMLAgent
+      kind: 1
+    - name: GetSoftwareAgent
+      kind: 2

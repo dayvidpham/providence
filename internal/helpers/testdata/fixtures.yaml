@@ -1,0 +1,168 @@
+# Graph Topology Fixtures for internal/helpers
+# =============================================
+#
+# Defines named graph topologies with node lists, blocked-by edges,
+# and per-node expected Ancestors/Descendants traversal results.
+#
+# Edge semantics: source is blocked by target (source → target means source
+# cannot close until target is complete). This matches the blocked-by graph.
+#
+# Ancestors(N)   = all tasks that N transitively waits for (outgoing DFS).
+# Descendants(N) = all tasks transitively waiting for N (incoming DFS).
+
+graph_topologies:
+
+  # --------------------------------------------------------------------------
+  # Topology 1: Isolated node (no edges)
+  # --------------------------------------------------------------------------
+  - name: isolated
+    description: "Single node with no dependencies"
+    nodes: ["A"]
+    edges: []
+    queries:
+      - node: A
+        ancestors: []
+        descendants: []
+
+  # --------------------------------------------------------------------------
+  # Topology 2: Linear chain — A → B → C
+  #   (A blocked by B, B blocked by C)
+  # --------------------------------------------------------------------------
+  - name: linear_chain_3
+    description: "Three-node linear dependency chain"
+    nodes: ["A", "B", "C"]
+    edges:
+      - source: A
+        target: B
+      - source: B
+        target: C
+    queries:
+      - node: A
+        ancestors: ["B", "C"]
+        descendants: []
+      - node: B
+        ancestors: ["C"]
+        descendants: ["A"]
+      - node: C
+        ancestors: []
+        descendants: ["A", "B"]
+
+  # --------------------------------------------------------------------------
+  # Topology 3: Tree — A → B, A → C, B → D
+  # --------------------------------------------------------------------------
+  - name: tree
+    description: "Tree-shaped dependency graph"
+    nodes: ["A", "B", "C", "D"]
+    edges:
+      - source: A
+        target: B
+      - source: A
+        target: C
+      - source: B
+        target: D
+    queries:
+      - node: A
+        ancestors: ["B", "C", "D"]
+        descendants: []
+      - node: B
+        ancestors: ["D"]
+        descendants: ["A"]
+      - node: C
+        ancestors: []
+        descendants: ["A"]
+      - node: D
+        ancestors: []
+        descendants: ["A", "B"]
+
+  # --------------------------------------------------------------------------
+  # Topology 4: Diamond — A → B, A → C, B → D, C → D
+  # --------------------------------------------------------------------------
+  - name: diamond
+    description: "Diamond dependency graph with shared leaf"
+    nodes: ["A", "B", "C", "D"]
+    edges:
+      - source: A
+        target: B
+      - source: A
+        target: C
+      - source: B
+        target: D
+      - source: C
+        target: D
+    queries:
+      - node: A
+        ancestors: ["B", "C", "D"]
+        descendants: []
+      - node: B
+        ancestors: ["D"]
+        descendants: ["A"]
+      - node: C
+        ancestors: ["D"]
+        descendants: ["A"]
+      - node: D
+        ancestors: []
+        descendants: ["A", "B", "C"]
+
+  # --------------------------------------------------------------------------
+  # Topology 5: Wide shallow — A → B, A → C, A → D, A → E (all leaves)
+  # --------------------------------------------------------------------------
+  - name: wide_shallow
+    description: "One node blocked by many leaf nodes"
+    nodes: ["A", "B", "C", "D", "E"]
+    edges:
+      - source: A
+        target: B
+      - source: A
+        target: C
+      - source: A
+        target: D
+      - source: A
+        target: E
+    queries:
+      - node: A
+        ancestors: ["B", "C", "D", "E"]
+        descendants: []
+      - node: B
+        ancestors: []
+        descendants: ["A"]
+      - node: C
+        ancestors: []
+        descendants: ["A"]
+      - node: D
+        ancestors: []
+        descendants: ["A"]
+      - node: E
+        ancestors: []
+        descendants: ["A"]
+
+  # --------------------------------------------------------------------------
+  # Topology 6: Deep chain — A → B → C → D → E (5 levels)
+  # --------------------------------------------------------------------------
+  - name: deep_chain
+    description: "Five-level linear chain"
+    nodes: ["A", "B", "C", "D", "E"]
+    edges:
+      - source: A
+        target: B
+      - source: B
+        target: C
+      - source: C
+        target: D
+      - source: D
+        target: E
+    queries:
+      - node: A
+        ancestors: ["B", "C", "D", "E"]
+        descendants: []
+      - node: B
+        ancestors: ["C", "D", "E"]
+        descendants: ["A"]
+      - node: C
+        ancestors: ["D", "E"]
+        descendants: ["A", "B"]
+      - node: D
+        ancestors: ["E"]
+        descendants: ["A", "B", "C"]
+      - node: E
+        ancestors: []
+        descendants: ["A", "B", "C", "D"]
