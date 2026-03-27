@@ -81,6 +81,10 @@ func FromGitRemote(remoteURL string) (string, error) {
 		}
 		result = "https://" + result
 
+	case strings.HasPrefix(remoteURL, "git://"):
+		// git://github.com/user/repo.git -> https://github.com/user/repo
+		result = "https://" + strings.TrimPrefix(remoteURL, "git://")
+
 	case strings.Contains(remoteURL, "@") && strings.Contains(remoteURL, ":") &&
 		!strings.Contains(remoteURL, "://"):
 		// SCP-style: git@github.com:user/repo.git -> https://github.com/user/repo

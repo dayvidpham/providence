@@ -1,0 +1,164 @@
+# Combinatorial Test Fixtures for pkg/namespace
+# ================================================
+#
+# Axes are expanded into permutation test cases by the Go test harness.
+# For FromGitRemote: protocol_form × host × path × suffix → test case
+# Expected output for all valid cases: https://{host}/{path}
+#
+# Total permutations: 6 protocols × 5 hosts × 3 paths × 2 suffixes = 180
+
+# =================================
+# FromGitRemote: URL Normalization
+# =================================
+
+from_git_remote:
+
+  # Each protocol form is one axis. The template uses {host}, {path}, {suffix}
+  # placeholders that get expanded against every host × path × suffix combination.
+  protocol_forms:
+    - name: https
+      template: "https://{host}/{path}{suffix}"
+      description: "Standard HTTPS clone URL"
+
+    - name: http
+      template: "http://{host}/{path}{suffix}"
+      description: "HTTP URL normalized to HTTPS"
+
+    - name: ssh_url
+      template: "ssh://git@{host}/{path}{suffix}"
+      description: "SSH URL with ssh:// protocol and git@ user"
+
+    - name: scp_git
+      template: "git@{host}:{path}{suffix}"
+      description: "SCP-style with default git user"
+
+    - name: scp_custom_user
+      template: "deploy@{host}:{path}{suffix}"
+      description: "SCP-style with custom deploy user"
+
+    - name: git_protocol
+      template: "git://{host}/{path}{suffix}"
+      description: "Git protocol (read-only, deprecated on GitHub)"
+
+  hosts:
+    - github.com
+    - gitlab.com
+    - bitbucket.org
+    - gitea.example.com
+    - git.internal.corp.net
+
+  paths:
+    - name: flat
+      value: user/repo
+
+    - name: nested
+      value: org/group/repo
+
+    - name: deep_nested
+      value: org/group/sub/repo
+
+  suffixes:
+    - name: dot_git
+      value: ".git"
+
+    - name: bare
+      value: ""
+
+  # Error cases: inputs that must return ErrNoRemote
+  error_cases:
+    - name: empty_string
+      input: ""
+
+    - name: whitespace_spaces
+      input: "   "
+
+    - name: whitespace_tab
+      input: "\t"
+
+    - name: whitespace_newline
+      input: "\n"
+
+    - name: whitespace_mixed
+      input: " \t\n "
+
+  # Explicit edge cases not covered by combinatorial generation
+  explicit_edge_cases:
+    - name: ssh_url_with_port
+      input: "ssh://git@github.com:22/user/repo.git"
+      expected: "https://github.com:22/user/repo"
+      description: "Port number preserved in SSH URL conversion"
+
+    - name: ssh_url_no_user
+      input: "ssh://github.com/user/repo.git"
+      expected: "https://github.com/user/repo"
+      description: "SSH URL without user@ prefix"
+
+    - name: https_trailing_slash
+      input: "https://github.com/user/repo/"
+      expected: "https://github.com/user/repo/"
+      description: "Trailing slash on HTTPS URL preserved"
+
+    - name: https_already_clean
+      input: "https://github.com/dayvidpham/providence"
+      expected: "https://github.com/dayvidpham/providence"
+      description: "Already-canonical URL is a no-op"
+
+    - name: scp_single_segment_path
+      input: "git@github.com:repo.git"
+      expected: "https://github.com/repo"
+      description: "SCP-style with single path segment (no org)"
+
+
+# =================================
+# FromDirectory: file:// URI generation
+# =================================
+
+from_directory:
+  cases:
+    - name: root
+      input: "/"
+      expected: "file:///"
+
+    - name: short_absolute
+      input: "/tmp"
+      expected: "file:///tmp"
+
+    - name: home_dir
+      input: "/home/user"
+      expected: "file:///home/user"
+
+    - name: project_dir
+      input: "/home/user/projects/myapp"
+      expected: "file:///home/user/projects/myapp"
+
+    - name: deep_nested
+      input: "/home/user/projects/myapp/src/deep/nested"
+      expected: "file:///home/user/projects/myapp/src/deep/nested"
+
+    - name: trailing_slash
+      input: "/home/user/project/"
+      expected: "file:///home/user/project"
+
+    - name: double_slash
+      input: "/home/user//project"
+      expected: "file:///home/user/project"
+
+    - name: dot_segment
+      input: "/home/user/./project"
+      expected: "file:///home/user/project"
+
+    - name: dotdot_segment
+      input: "/home/user/sub/../project"
+      expected: "file:///home/user/project"
+
+    - name: var_path
+      input: "/var/lib/data"
+      expected: "file:///var/lib/data"
+
+    - name: opt_path
+      input: "/opt/services/app"
+      expected: "file:///opt/services/app"
+
+    - name: space_in_path
+      input: "/home/user/my project"
+      expected: "file:///home/user/my project"
