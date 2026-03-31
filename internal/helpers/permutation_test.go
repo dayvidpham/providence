@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"testing"
 
-	intgraph "github.com/dayvidpham/providence/internal/graph"
-	"github.com/dayvidpham/providence/internal/helpers"
-	"github.com/dayvidpham/providence/internal/testutil"
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	intgraph "github.com/dayvidpham/provenance/internal/graph"
+	"github.com/dayvidpham/provenance/internal/helpers"
+	"github.com/dayvidpham/provenance/internal/testutil"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	dgraph "github.com/dominikbraun/graph"
 	"gopkg.in/yaml.v3"
 )

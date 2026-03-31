@@ -13,7 +13,7 @@ This guide covers the development workflow for Providence contributors. For codi
 ### Clone and Set Up
 
 ```bash
-git clone https://github.com/dayvidpham/providence.git
+git clone https://github.com/dayvidpham/provenance.git
 cd providence
 go mod download
 ```
@@ -76,7 +76,7 @@ make lint  # Check for obvious errors
 **L2 (Tests):** Write integration tests that will initially fail
 ```bash
 # Edit *_test.go files
-# Import the actual production package (e.g., "github.com/dayvidpham/providence")
+# Import the actual production package (e.g., "github.com/dayvidpham/provenance")
 # Tests will fail at this point — that's expected!
 make test  # Should show failures
 ```
@@ -228,7 +228,7 @@ package providence_test
 
 import (
     "testing"
-    "github.com/dayvidpham/providence"
+    "github.com/dayvidpham/provenance"
     "github.com/google/uuid"
 )
 

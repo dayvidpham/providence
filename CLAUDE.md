@@ -1,19 +1,19 @@
-# Providence — Agent Coding Standards
+# Provenance — Agent Coding Standards
 
-This document defines the coding conventions and quality gates for the Providence
+This document defines the coding conventions and quality gates for the Provenance
 project. All contributors (human and AI) must follow these standards.
 
 ## Project Identity
 
-- **Module:** `github.com/dayvidpham/providence`
+- **Module:** `github.com/dayvidpham/provenance`
 - **Language:** Go 1.24+
 - **CGo:** disabled (`CGO_ENABLED=0`) — all dependencies must be pure Go
 
 ## Directory Structure
 
 ```
-providence/
-├── providence.go           # Package doc + public facade (Tracker interface + constructors)
+provenance/
+├── provenance.go           # Package doc + public facade (Tracker interface + constructors)
 ├── types.go                # All public types: TaskID, AgentID, ActivityID, Task, Agent (TPT), Edge, etc.
 ├── enums.go                # All iota enums: Status, Priority, TaskType, EdgeKind, AgentKind, Provider, Role, Phase, Stage
 ├── errors.go               # Sentinel errors and error constructors

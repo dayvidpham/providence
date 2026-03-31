@@ -3,10 +3,10 @@ package graph_test
 import (
 	"testing"
 
-	intgraph "github.com/dayvidpham/providence/internal/graph"
-	dbsqlite "github.com/dayvidpham/providence/internal/sqlite"
-	"github.com/dayvidpham/providence/internal/testutil"
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	intgraph "github.com/dayvidpham/provenance/internal/graph"
+	dbsqlite "github.com/dayvidpham/provenance/internal/sqlite"
+	"github.com/dayvidpham/provenance/internal/testutil"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	dgraph "github.com/dominikbraun/graph"
 )
 

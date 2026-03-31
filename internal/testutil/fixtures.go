@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	dbsqlite "github.com/dayvidpham/providence/internal/sqlite"
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	dbsqlite "github.com/dayvidpham/provenance/internal/sqlite"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	"github.com/google/uuid"
 )
 

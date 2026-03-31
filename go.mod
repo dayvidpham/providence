@@ -1,4 +1,4 @@
-module github.com/dayvidpham/providence
+module github.com/dayvidpham/provenance
 
 go 1.24.13
 

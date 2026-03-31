@@ -1,4 +1,4 @@
-package providence
+package provenance
 
 // Tracker is the central API for providence task management.
 // All methods are safe for concurrent use.

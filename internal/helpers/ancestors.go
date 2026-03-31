@@ -6,7 +6,7 @@ package helpers
 import (
 	"fmt"
 
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	dgraph "github.com/dominikbraun/graph"
 )
 

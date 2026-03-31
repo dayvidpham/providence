@@ -1,13 +1,13 @@
-package providence_test
+package provenance_test
 
 // reexport_test.go verifies that every exported symbol from pkg/ptypes is
-// re-exported by the root providence package. Uses reflect to scan both
+// re-exported by the root provenance package. Uses reflect to scan both
 // packages so that adding a new type, constant, or function to pkg/ptypes
 // without a corresponding re-export will be caught automatically.
 //
 // Strategy:
 //   - Reflect-based: scan all exported names from ptypes and verify each
-//     has a corresponding export in the root providence package
+//     has a corresponding export in the root provenance package
 //   - Runtime: errors.Is checks to confirm sentinel errors are the same objects
 //   - Runtime: parse function results match between packages
 
@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dayvidpham/providence"
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 )
 
 // collectExportedNames parses Go source files in dir and returns all exported
@@ -82,7 +82,7 @@ func collectExportedNames(t *testing.T, dir string) []string {
 }
 
 // TestReexportCompleteness scans pkg/ptypes for all exported names and verifies
-// that each one has a corresponding export in the root providence package.
+// that each one has a corresponding export in the root provenance package.
 // This replaces the old hand-maintained assignment checks.
 func TestReexportCompleteness(t *testing.T) {
 	// Find the module root by locating go.mod relative to test binary working dir.
@@ -134,19 +134,19 @@ func TestReexportSentinelErrorIdentity(t *testing.T) {
 		rootErr  error
 		ptypeErr error
 	}{
-		{"ErrNotFound", providence.ErrNotFound, ptypes.ErrNotFound},
-		{"ErrCycleDetected", providence.ErrCycleDetected, ptypes.ErrCycleDetected},
-		{"ErrAlreadyClosed", providence.ErrAlreadyClosed, ptypes.ErrAlreadyClosed},
-		{"ErrInvalidID", providence.ErrInvalidID, ptypes.ErrInvalidID},
-		{"ErrAgentKindMismatch", providence.ErrAgentKindMismatch, ptypes.ErrAgentKindMismatch},
+		{"ErrNotFound", provenance.ErrNotFound, ptypes.ErrNotFound},
+		{"ErrCycleDetected", provenance.ErrCycleDetected, ptypes.ErrCycleDetected},
+		{"ErrAlreadyClosed", provenance.ErrAlreadyClosed, ptypes.ErrAlreadyClosed},
+		{"ErrInvalidID", provenance.ErrInvalidID, ptypes.ErrInvalidID},
+		{"ErrAgentKindMismatch", provenance.ErrAgentKindMismatch, ptypes.ErrAgentKindMismatch},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			if !errors.Is(c.rootErr, c.ptypeErr) {
-				t.Errorf("providence.%s is not errors.Is-identical to ptypes.%s", c.name, c.name)
+				t.Errorf("provenance.%s is not errors.Is-identical to ptypes.%s", c.name, c.name)
 			}
 			if !errors.Is(c.ptypeErr, c.rootErr) {
-				t.Errorf("ptypes.%s is not errors.Is-identical to providence.%s", c.name, c.name)
+				t.Errorf("ptypes.%s is not errors.Is-identical to provenance.%s", c.name, c.name)
 			}
 		})
 	}
@@ -161,7 +161,7 @@ func TestReexportParseFunctionIdentity(t *testing.T) {
 	validID := "ns--018f4b12-3456-7890-abcd-ef0123456789"
 
 	// ParseTaskID
-	rootTask, rootErr := providence.ParseTaskID(validID)
+	rootTask, rootErr := provenance.ParseTaskID(validID)
 	ptypeTask, ptypeErr := ptypes.ParseTaskID(validID)
 	if rootErr != nil || ptypeErr != nil {
 		t.Fatalf("ParseTaskID errors: root=%v, ptypes=%v", rootErr, ptypeErr)
@@ -171,7 +171,7 @@ func TestReexportParseFunctionIdentity(t *testing.T) {
 	}
 
 	// ParseAgentID
-	rootAgent, rootErr := providence.ParseAgentID(validID)
+	rootAgent, rootErr := provenance.ParseAgentID(validID)
 	ptypeAgent, ptypeErr := ptypes.ParseAgentID(validID)
 	if rootErr != nil || ptypeErr != nil {
 		t.Fatalf("ParseAgentID errors: root=%v, ptypes=%v", rootErr, ptypeErr)
@@ -181,7 +181,7 @@ func TestReexportParseFunctionIdentity(t *testing.T) {
 	}
 
 	// ParseActivityID
-	rootAct, rootErr := providence.ParseActivityID(validID)
+	rootAct, rootErr := provenance.ParseActivityID(validID)
 	ptypeAct, ptypeErr := ptypes.ParseActivityID(validID)
 	if rootErr != nil || ptypeErr != nil {
 		t.Fatalf("ParseActivityID errors: root=%v, ptypes=%v", rootErr, ptypeErr)
@@ -191,7 +191,7 @@ func TestReexportParseFunctionIdentity(t *testing.T) {
 	}
 
 	// ParseCommentID
-	rootComment, rootErr := providence.ParseCommentID(validID)
+	rootComment, rootErr := provenance.ParseCommentID(validID)
 	ptypeComment, ptypeErr := ptypes.ParseCommentID(validID)
 	if rootErr != nil || ptypeErr != nil {
 		t.Fatalf("ParseCommentID errors: root=%v, ptypes=%v", rootErr, ptypeErr)

@@ -3,7 +3,7 @@ package sqlite
 import (
 	"fmt"
 
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	"github.com/google/uuid"
 	zs "zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"

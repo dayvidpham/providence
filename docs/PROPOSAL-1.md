@@ -32,7 +32,7 @@ Only `EdgeBlockedBy` affects task readiness. The other 5 edge kinds (`EdgeDerive
 ## 2. Module Layout
 
 ```
-github.com/dayvidpham/providence/
+github.com/dayvidpham/provenance/
 ├── providence.go           # Package doc + public facade (Tracker type + constructors)
 ├── types.go                # All public types: TaskID, AgentID, ActivityID, Task, Agent, Activity, Edge, etc.
 ├── enums.go                # All iota enums: Status, Priority, TaskType, EdgeKind, Role, Model, Phase, Stage
@@ -865,19 +865,19 @@ This matches `bd dep add parent --blocked-by child`.
 Pasture imports providence as a Go module:
 
 ```go
-import "github.com/dayvidpham/providence"
+import "github.com/dayvidpham/provenance"
 ```
 
 In pasture's `go.mod`:
 
 ```
-require github.com/dayvidpham/providence v0.1.0
+require github.com/dayvidpham/provenance v0.1.0
 ```
 
 During development, use `replace` directive for local development:
 
 ```
-replace github.com/dayvidpham/providence => ../../providence
+replace github.com/dayvidpham/provenance => ../../providence
 ```
 
 ### 8.2 CLI Surface: `pasture task ...`
@@ -1109,7 +1109,7 @@ These slices are ordered by dependency. Each slice is independently testable and
 ### go.mod
 
 ```
-module github.com/dayvidpham/providence
+module github.com/dayvidpham/provenance
 
 go 1.24
 

@@ -1,4 +1,4 @@
-package providence_test
+package provenance_test
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dayvidpham/providence"
+	"github.com/dayvidpham/provenance"
 )
 
 // ---------------------------------------------------------------------------
@@ -15,9 +15,9 @@ import (
 
 // openTestTracker returns a fresh in-memory Tracker for testing.
 // The tracker is closed automatically when the test ends.
-func openTestTracker(t *testing.T) providence.Tracker {
+func openTestTracker(t *testing.T) provenance.Tracker {
 	t.Helper()
-	tr, err := providence.OpenMemory()
+	tr, err := provenance.OpenMemory()
 	if err != nil {
 		t.Fatalf("OpenMemory() failed: %v", err)
 	}
@@ -31,9 +31,9 @@ func openTestTracker(t *testing.T) providence.Tracker {
 
 // mustCreateTask creates a task with sensible defaults and fatals on error.
 // Uses TaskTypeTask, PriorityMedium, and PhaseUnscoped as defaults.
-func mustCreateTask(t *testing.T, tr providence.Tracker, namespace string) providence.Task {
+func mustCreateTask(t *testing.T, tr provenance.Tracker, namespace string) provenance.Task {
 	t.Helper()
-	task, err := tr.Create(namespace, "Test Task", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create(namespace, "Test Task", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("mustCreateTask(%q): Create() failed: %v", namespace, err)
 	}
@@ -41,7 +41,7 @@ func mustCreateTask(t *testing.T, tr providence.Tracker, namespace string) provi
 }
 
 func TestOpenMemory(t *testing.T) {
-	tr, err := providence.OpenMemory()
+	tr, err := provenance.OpenMemory()
 	if err != nil {
 		t.Fatalf("OpenMemory() returned error: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestOpenMemory(t *testing.T) {
 func TestCreateAndShow(t *testing.T) {
 	tr := openTestTracker(t)
 
-	task, err := tr.Create("test-ns", "My Task", "A description", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create("test-ns", "My Task", "A description", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -64,16 +64,16 @@ func TestCreateAndShow(t *testing.T) {
 	if task.Description != "A description" {
 		t.Errorf("Description = %q, want %q", task.Description, "A description")
 	}
-	if task.Status != providence.StatusOpen {
+	if task.Status != provenance.StatusOpen {
 		t.Errorf("Status = %v, want StatusOpen", task.Status)
 	}
-	if task.Priority != providence.PriorityMedium {
+	if task.Priority != provenance.PriorityMedium {
 		t.Errorf("Priority = %v, want PriorityMedium", task.Priority)
 	}
-	if task.Type != providence.TaskTypeTask {
+	if task.Type != provenance.TaskTypeTask {
 		t.Errorf("Type = %v, want TaskTypeTask", task.Type)
 	}
-	if task.Phase != providence.PhaseUnscoped {
+	if task.Phase != provenance.PhaseUnscoped {
 		t.Errorf("Phase = %v, want PhaseUnscoped", task.Phase)
 	}
 	if task.ID.Namespace != "test-ns" {
@@ -96,11 +96,11 @@ func TestCreateAndShow(t *testing.T) {
 func TestCreateGeneratesUUIDv7(t *testing.T) {
 	tr := openTestTracker(t)
 
-	a, err := tr.Create("ns", "Task A", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	a, err := tr.Create("ns", "Task A", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create A error: %v", err)
 	}
-	b, err := tr.Create("ns", "Task B", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	b, err := tr.Create("ns", "Task B", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create B error: %v", err)
 	}
@@ -113,13 +113,13 @@ func TestCreateGeneratesUUIDv7(t *testing.T) {
 func TestShowNotFound(t *testing.T) {
 	tr := openTestTracker(t)
 
-	fakeID, err := providence.ParseTaskID("ns--00000000-0000-7000-8000-000000000000")
+	fakeID, err := provenance.ParseTaskID("ns--00000000-0000-7000-8000-000000000000")
 	if err != nil {
 		t.Fatalf("ParseTaskID error: %v", err)
 	}
 
 	_, err = tr.Show(fakeID)
-	if !errors.Is(err, providence.ErrNotFound) {
+	if !errors.Is(err, provenance.ErrNotFound) {
 		t.Errorf("Show non-existent task: got %v, want ErrNotFound", err)
 	}
 }
@@ -127,13 +127,13 @@ func TestShowNotFound(t *testing.T) {
 func TestUpdateTask(t *testing.T) {
 	tr := openTestTracker(t)
 
-	task, err := tr.Create("ns", "Old Title", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create("ns", "Old Title", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
 
 	newTitle := "New Title"
-	updated, err := tr.Update(task.ID, providence.UpdateFields{Title: &newTitle})
+	updated, err := tr.Update(task.ID, provenance.UpdateFields{Title: &newTitle})
 	if err != nil {
 		t.Fatalf("Update() error: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestUpdateTask(t *testing.T) {
 func TestCloseTask(t *testing.T) {
 	tr := openTestTracker(t)
 
-	task, err := tr.Create("ns", "Close Me", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create("ns", "Close Me", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestCloseTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CloseTask() error: %v", err)
 	}
-	if closed.Status != providence.StatusClosed {
+	if closed.Status != provenance.StatusClosed {
 		t.Errorf("Status = %v, want StatusClosed", closed.Status)
 	}
 	if closed.ClosedAt == nil {
@@ -175,7 +175,7 @@ func TestCloseTask(t *testing.T) {
 func TestCloseTaskAlreadyClosed(t *testing.T) {
 	tr := openTestTracker(t)
 
-	task, err := tr.Create("ns", "Double Close", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create("ns", "Double Close", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestCloseTaskAlreadyClosed(t *testing.T) {
 	}
 
 	_, err = tr.CloseTask(task.ID, "second close")
-	if !errors.Is(err, providence.ErrAlreadyClosed) {
+	if !errors.Is(err, provenance.ErrAlreadyClosed) {
 		t.Errorf("Second CloseTask: got %v, want ErrAlreadyClosed", err)
 	}
 }
@@ -193,21 +193,21 @@ func TestCloseTaskAlreadyClosed(t *testing.T) {
 func TestAddEdgeBlockedBy(t *testing.T) {
 	tr := openTestTracker(t)
 
-	parent, err := tr.Create("ns", "Parent", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	parent, err := tr.Create("ns", "Parent", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create parent error: %v", err)
 	}
-	child, err := tr.Create("ns", "Child", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	child, err := tr.Create("ns", "Child", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create child error: %v", err)
 	}
 
 	// parent is blocked by child.
-	if err := tr.AddEdge(parent.ID, child.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(parent.ID, child.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge() error: %v", err)
 	}
 
-	kind := providence.EdgeBlockedBy
+	kind := provenance.EdgeBlockedBy
 	edges, err := tr.Edges(parent.ID, &kind)
 	if err != nil {
 		t.Fatalf("Edges() error: %v", err)
@@ -223,23 +223,23 @@ func TestAddEdgeBlockedBy(t *testing.T) {
 func TestAddEdgeCycleDetected(t *testing.T) {
 	tr := openTestTracker(t)
 
-	a, err := tr.Create("ns", "A", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	a, err := tr.Create("ns", "A", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create A error: %v", err)
 	}
-	b, err := tr.Create("ns", "B", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	b, err := tr.Create("ns", "B", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create B error: %v", err)
 	}
 
 	// A blocked by B.
-	if err := tr.AddEdge(a.ID, b.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(a.ID, b.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge A->B error: %v", err)
 	}
 
 	// B blocked by A — would form a cycle.
-	err = tr.AddEdge(b.ID, a.ID.String(), providence.EdgeBlockedBy)
-	if !errors.Is(err, providence.ErrCycleDetected) {
+	err = tr.AddEdge(b.ID, a.ID.String(), provenance.EdgeBlockedBy)
+	if !errors.Is(err, provenance.ErrCycleDetected) {
 		t.Errorf("AddEdge B->A: got %v, want ErrCycleDetected", err)
 	}
 }
@@ -247,17 +247,17 @@ func TestAddEdgeCycleDetected(t *testing.T) {
 func TestReadyAndBlocked(t *testing.T) {
 	tr := openTestTracker(t)
 
-	parent, err := tr.Create("ns", "Parent", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	parent, err := tr.Create("ns", "Parent", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create parent error: %v", err)
 	}
-	child, err := tr.Create("ns", "Child", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	child, err := tr.Create("ns", "Child", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create child error: %v", err)
 	}
 
 	// parent blocked by child.
-	if err := tr.AddEdge(parent.ID, child.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(parent.ID, child.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge error: %v", err)
 	}
 
@@ -271,7 +271,7 @@ func TestReadyAndBlocked(t *testing.T) {
 	}
 
 	// child should be ready; parent should be blocked.
-	findID := func(tasks []providence.Task, id providence.TaskID) bool {
+	findID := func(tasks []provenance.Task, id provenance.TaskID) bool {
 		for _, t := range tasks {
 			if t.ID == id {
 				return true
@@ -310,7 +310,7 @@ func TestReadyAndBlocked(t *testing.T) {
 func TestAddLabel(t *testing.T) {
 	tr := openTestTracker(t)
 
-	task, err := tr.Create("ns", "Task", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create("ns", "Task", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -352,7 +352,7 @@ func TestAddComment(t *testing.T) {
 		t.Fatalf("RegisterHumanAgent() error: %v", err)
 	}
 
-	task, err := tr.Create("ns", "Task", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	task, err := tr.Create("ns", "Task", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create() error: %v", err)
 	}
@@ -396,7 +396,7 @@ func TestRegisterHumanAgent(t *testing.T) {
 	if agent.Contact != "bob@example.com" {
 		t.Errorf("Contact = %q, want %q", agent.Contact, "bob@example.com")
 	}
-	if agent.Kind != providence.AgentKindHuman {
+	if agent.Kind != provenance.AgentKindHuman {
 		t.Errorf("Kind = %v, want AgentKindHuman", agent.Kind)
 	}
 	if agent.ID.Namespace != "ns" {
@@ -417,20 +417,20 @@ func TestRegisterMLAgent(t *testing.T) {
 	tr := openTestTracker(t)
 
 	// "claude_sonnet_4" is a model seeded in the schema at database creation time.
-	agent, err := tr.RegisterMLAgent("ns", providence.RoleWorker, providence.ProviderAnthropic, "claude_sonnet_4")
+	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, "claude_sonnet_4")
 	if err != nil {
 		t.Fatalf("RegisterMLAgent() error: %v", err)
 	}
-	if agent.Role != providence.RoleWorker {
+	if agent.Role != provenance.RoleWorker {
 		t.Errorf("Role = %v, want RoleWorker", agent.Role)
 	}
-	if agent.Model.Provider != providence.ProviderAnthropic {
+	if agent.Model.Provider != provenance.ProviderAnthropic {
 		t.Errorf("Provider = %v, want ProviderAnthropic", agent.Model.Provider)
 	}
 	if agent.Model.Name != "claude_sonnet_4" {
 		t.Errorf("ModelName = %q, want %q", agent.Model.Name, "claude_sonnet_4")
 	}
-	if agent.Kind != providence.AgentKindMachineLearning {
+	if agent.Kind != provenance.AgentKindMachineLearning {
 		t.Errorf("Kind = %v, want AgentKindMachineLearning", agent.Kind)
 	}
 
@@ -452,17 +452,17 @@ func TestStartAndEndActivity(t *testing.T) {
 		t.Fatalf("RegisterHumanAgent() error: %v", err)
 	}
 
-	act, err := tr.StartActivity(agent.ID, providence.PhaseWorkerSlices, providence.StageInProgress, "implementing slice 4")
+	act, err := tr.StartActivity(agent.ID, provenance.PhaseWorkerSlices, provenance.StageInProgress, "implementing slice 4")
 	if err != nil {
 		t.Fatalf("StartActivity() error: %v", err)
 	}
 	if act.AgentID != agent.ID {
 		t.Errorf("AgentID = %v, want %v", act.AgentID, agent.ID)
 	}
-	if act.Phase != providence.PhaseWorkerSlices {
+	if act.Phase != provenance.PhaseWorkerSlices {
 		t.Errorf("Phase = %v, want PhaseWorkerSlices", act.Phase)
 	}
-	if act.Stage != providence.StageInProgress {
+	if act.Stage != provenance.StageInProgress {
 		t.Errorf("Stage = %v, want StageInProgress", act.Stage)
 	}
 	if act.EndedAt != nil {
@@ -486,23 +486,23 @@ func TestAncestorsAndDescendants(t *testing.T) {
 
 	// Chain: A blocked by B blocked by C.
 	// Ancestors of A = {B, C}, Descendants of C = {A, B}.
-	a, err := tr.Create("ns", "A", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	a, err := tr.Create("ns", "A", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create A: %v", err)
 	}
-	b, err := tr.Create("ns", "B", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	b, err := tr.Create("ns", "B", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create B: %v", err)
 	}
-	c, err := tr.Create("ns", "C", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	c, err := tr.Create("ns", "C", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create C: %v", err)
 	}
 
-	if err := tr.AddEdge(a.ID, b.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(a.ID, b.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge A->B: %v", err)
 	}
-	if err := tr.AddEdge(b.ID, c.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(b.ID, c.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge B->C: %v", err)
 	}
 
@@ -511,7 +511,7 @@ func TestAncestorsAndDescendants(t *testing.T) {
 		t.Fatalf("Ancestors(A) error: %v", err)
 	}
 
-	containsTask := func(tasks []providence.Task, id providence.TaskID) bool {
+	containsTask := func(tasks []provenance.Task, id provenance.TaskID) bool {
 		for _, t := range tasks {
 			if t.ID == id {
 				return true
@@ -549,31 +549,31 @@ func TestAncestorsAndDescendants(t *testing.T) {
 func TestDepTree(t *testing.T) {
 	tr := openTestTracker(t)
 
-	root, err := tr.Create("ns", "Root", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	root, err := tr.Create("ns", "Root", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create root: %v", err)
 	}
-	dep1, err := tr.Create("ns", "Dep1", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	dep1, err := tr.Create("ns", "Dep1", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create dep1: %v", err)
 	}
-	dep2, err := tr.Create("ns", "Dep2", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	dep2, err := tr.Create("ns", "Dep2", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create dep2: %v", err)
 	}
-	dep3, err := tr.Create("ns", "Dep3", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	dep3, err := tr.Create("ns", "Dep3", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create dep3: %v", err)
 	}
 
 	// root blocked by dep1, dep1 blocked by dep2, root blocked by dep3.
-	if err := tr.AddEdge(root.ID, dep1.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(root.ID, dep1.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge root->dep1: %v", err)
 	}
-	if err := tr.AddEdge(dep1.ID, dep2.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(dep1.ID, dep2.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge dep1->dep2: %v", err)
 	}
-	if err := tr.AddEdge(root.ID, dep3.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(root.ID, dep3.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge root->dep3: %v", err)
 	}
 
@@ -589,24 +589,24 @@ func TestDepTree(t *testing.T) {
 func TestList(t *testing.T) {
 	tr := openTestTracker(t)
 
-	_, err := tr.Create("ns", "Open Task", "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	_, err := tr.Create("ns", "Open Task", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create open: %v", err)
 	}
-	closedTask, err := tr.Create("ns", "Closed Task", "", providence.TaskTypeBug, providence.PriorityHigh, providence.PhaseUnscoped)
+	closedTask, err := tr.Create("ns", "Closed Task", "", provenance.TaskTypeBug, provenance.PriorityHigh, provenance.PhaseUnscoped)
 	if err != nil {
 		t.Fatalf("Create closed: %v", err)
 	}
 	if _, err := tr.CloseTask(closedTask.ID, "fixed"); err != nil {
 		t.Fatalf("CloseTask: %v", err)
 	}
-	_, err = tr.Create("ns", "Feature Task", "", providence.TaskTypeFeature, providence.PriorityLow, providence.PhaseWorkerSlices)
+	_, err = tr.Create("ns", "Feature Task", "", provenance.TaskTypeFeature, provenance.PriorityLow, provenance.PhaseWorkerSlices)
 	if err != nil {
 		t.Fatalf("Create feature: %v", err)
 	}
 
 	// No filter: should return all 3.
-	all, err := tr.List(providence.ListFilter{})
+	all, err := tr.List(provenance.ListFilter{})
 	if err != nil {
 		t.Fatalf("List (no filter) error: %v", err)
 	}
@@ -615,8 +615,8 @@ func TestList(t *testing.T) {
 	}
 
 	// Filter by status = open.
-	openStatus := providence.StatusOpen
-	open, err := tr.List(providence.ListFilter{Status: &openStatus})
+	openStatus := provenance.StatusOpen
+	open, err := tr.List(provenance.ListFilter{Status: &openStatus})
 	if err != nil {
 		t.Fatalf("List (open) error: %v", err)
 	}
@@ -625,8 +625,8 @@ func TestList(t *testing.T) {
 	}
 
 	// Filter by phase = worker_slices.
-	phase := providence.PhaseWorkerSlices
-	byPhase, err := tr.List(providence.ListFilter{Phase: &phase})
+	phase := provenance.PhaseWorkerSlices
+	byPhase, err := tr.List(provenance.ListFilter{Phase: &phase})
 	if err != nil {
 		t.Fatalf("List (phase) error: %v", err)
 	}
@@ -644,23 +644,23 @@ func TestList(t *testing.T) {
 func TestRegisterSoftwareAgent(t *testing.T) {
 	tr := openTestTracker(t)
 
-	sa, err := tr.RegisterSoftwareAgent("ns", "providence-cli", "v0.1.0", "https://github.com/dayvidpham/providence")
+	sa, err := tr.RegisterSoftwareAgent("ns", "provenance-cli", "v0.1.0", "https://github.com/dayvidpham/provenance")
 	if err != nil {
 		t.Fatalf("RegisterSoftwareAgent() error: %v", err)
 	}
 
 	// Verify returned fields.
-	if sa.Kind != providence.AgentKindSoftware {
+	if sa.Kind != provenance.AgentKindSoftware {
 		t.Errorf("Kind = %v, want AgentKindSoftware", sa.Kind)
 	}
-	if sa.Name != "providence-cli" {
-		t.Errorf("Name = %q, want %q", sa.Name, "providence-cli")
+	if sa.Name != "provenance-cli" {
+		t.Errorf("Name = %q, want %q", sa.Name, "provenance-cli")
 	}
 	if sa.Version != "v0.1.0" {
 		t.Errorf("Version = %q, want %q", sa.Version, "v0.1.0")
 	}
-	if sa.Source != "https://github.com/dayvidpham/providence" {
-		t.Errorf("Source = %q, want %q", sa.Source, "https://github.com/dayvidpham/providence")
+	if sa.Source != "https://github.com/dayvidpham/provenance" {
+		t.Errorf("Source = %q, want %q", sa.Source, "https://github.com/dayvidpham/provenance")
 	}
 	if sa.ID.Namespace != "ns" {
 		t.Errorf("Namespace = %q, want %q", sa.ID.Namespace, "ns")
@@ -680,7 +680,7 @@ func TestRegisterSoftwareAgent(t *testing.T) {
 	if retrieved.Source != sa.Source {
 		t.Errorf("Retrieved Source = %q, want %q", retrieved.Source, sa.Source)
 	}
-	if retrieved.Kind != providence.AgentKindSoftware {
+	if retrieved.Kind != provenance.AgentKindSoftware {
 		t.Errorf("Retrieved Kind = %v, want AgentKindSoftware", retrieved.Kind)
 	}
 }
@@ -695,7 +695,7 @@ func TestAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegisterHumanAgent() error: %v", err)
 	}
-	ml, err := tr.RegisterMLAgent("ns", providence.RoleReviewer, providence.ProviderAnthropic, "claude_sonnet_4")
+	ml, err := tr.RegisterMLAgent("ns", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude_sonnet_4")
 	if err != nil {
 		t.Fatalf("RegisterMLAgent() error: %v", err)
 	}
@@ -707,12 +707,12 @@ func TestAgent(t *testing.T) {
 	// Verify Agent() for each returns the correct Kind.
 	cases := []struct {
 		name     string
-		id       providence.AgentID
-		wantKind providence.AgentKind
+		id       provenance.AgentID
+		wantKind provenance.AgentKind
 	}{
-		{"human", human.ID, providence.AgentKindHuman},
-		{"ml", ml.ID, providence.AgentKindMachineLearning},
-		{"software", sw.ID, providence.AgentKindSoftware},
+		{"human", human.ID, provenance.AgentKindHuman},
+		{"ml", ml.ID, provenance.AgentKindMachineLearning},
+		{"software", sw.ID, provenance.AgentKindSoftware},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -741,7 +741,7 @@ func TestActivities(t *testing.T) {
 	}
 
 	// Start an activity.
-	act, err := tr.StartActivity(agent.ID, providence.PhaseCodeReview, providence.StageInProgress, "reviewing PR")
+	act, err := tr.StartActivity(agent.ID, provenance.PhaseCodeReview, provenance.StageInProgress, "reviewing PR")
 	if err != nil {
 		t.Fatalf("StartActivity() error: %v", err)
 	}
@@ -766,7 +766,7 @@ func TestActivities(t *testing.T) {
 	if activities[0].ID != act.ID {
 		t.Errorf("Activities()[0].ID = %v, want %v", activities[0].ID, act.ID)
 	}
-	if activities[0].Phase != providence.PhaseCodeReview {
+	if activities[0].Phase != provenance.PhaseCodeReview {
 		t.Errorf("Activities()[0].Phase = %v, want PhaseCodeReview", activities[0].Phase)
 	}
 	if activities[0].Notes != "reviewing PR" {
@@ -795,12 +795,12 @@ func TestRemoveEdge(t *testing.T) {
 	child := mustCreateTask(t, tr, "ns")
 
 	// Add edge.
-	if err := tr.AddEdge(parent.ID, child.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.AddEdge(parent.ID, child.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("AddEdge() error: %v", err)
 	}
 
 	// Verify edge exists.
-	kind := providence.EdgeBlockedBy
+	kind := provenance.EdgeBlockedBy
 	edges, err := tr.Edges(parent.ID, &kind)
 	if err != nil {
 		t.Fatalf("Edges() error: %v", err)
@@ -810,7 +810,7 @@ func TestRemoveEdge(t *testing.T) {
 	}
 
 	// Remove edge.
-	if err := tr.RemoveEdge(parent.ID, child.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.RemoveEdge(parent.ID, child.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Fatalf("RemoveEdge() error: %v", err)
 	}
 
@@ -824,7 +824,7 @@ func TestRemoveEdge(t *testing.T) {
 	}
 
 	// RemoveEdge on non-existent edge is idempotent (no error).
-	if err := tr.RemoveEdge(parent.ID, child.ID.String(), providence.EdgeBlockedBy); err != nil {
+	if err := tr.RemoveEdge(parent.ID, child.ID.String(), provenance.EdgeBlockedBy); err != nil {
 		t.Errorf("RemoveEdge() on non-existent edge: got error %v, want nil", err)
 	}
 }
@@ -838,16 +838,16 @@ func TestNonBlockedByEdges(t *testing.T) {
 	taskB := mustCreateTask(t, tr, "ns")
 
 	// Add a DerivedFrom edge: A derived from B.
-	if err := tr.AddEdge(taskA.ID, taskB.ID.String(), providence.EdgeDerivedFrom); err != nil {
+	if err := tr.AddEdge(taskA.ID, taskB.ID.String(), provenance.EdgeDerivedFrom); err != nil {
 		t.Fatalf("AddEdge(DerivedFrom) error: %v", err)
 	}
 	// Add a Supersedes edge: A supersedes B.
-	if err := tr.AddEdge(taskA.ID, taskB.ID.String(), providence.EdgeSupersedes); err != nil {
+	if err := tr.AddEdge(taskA.ID, taskB.ID.String(), provenance.EdgeSupersedes); err != nil {
 		t.Fatalf("AddEdge(Supersedes) error: %v", err)
 	}
 
 	// Verify the edges were created.
-	derivedKind := providence.EdgeDerivedFrom
+	derivedKind := provenance.EdgeDerivedFrom
 	derivedEdges, err := tr.Edges(taskA.ID, &derivedKind)
 	if err != nil {
 		t.Fatalf("Edges(DerivedFrom) error: %v", err)
@@ -855,7 +855,7 @@ func TestNonBlockedByEdges(t *testing.T) {
 	if len(derivedEdges) != 1 {
 		t.Fatalf("Edges(DerivedFrom) returned %d, want 1", len(derivedEdges))
 	}
-	supersedesKind := providence.EdgeSupersedes
+	supersedesKind := provenance.EdgeSupersedes
 	supersedesEdges, err := tr.Edges(taskA.ID, &supersedesKind)
 	if err != nil {
 		t.Fatalf("Edges(Supersedes) error: %v", err)
@@ -874,7 +874,7 @@ func TestNonBlockedByEdges(t *testing.T) {
 		t.Fatalf("Blocked() error: %v", err)
 	}
 
-	containsTask := func(tasks []providence.Task, id providence.TaskID) bool {
+	containsTask := func(tasks []provenance.Task, id provenance.TaskID) bool {
 		for _, tk := range tasks {
 			if tk.ID == id {
 				return true
@@ -960,11 +960,11 @@ func TestRemoveLabel(t *testing.T) {
 func TestCreateEmptyNamespace(t *testing.T) {
 	tr := openTestTracker(t)
 
-	_, err := tr.Create("", "Title", "Desc", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+	_, err := tr.Create("", "Title", "Desc", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 	if err == nil {
 		t.Fatal("Create() with empty namespace: expected error, got nil")
 	}
-	if !errors.Is(err, providence.ErrInvalidID) {
+	if !errors.Is(err, provenance.ErrInvalidID) {
 		t.Errorf("Create() with empty namespace: got %v, want ErrInvalidID", err)
 	}
 }
@@ -987,7 +987,7 @@ func TestConcurrentCreate(t *testing.T) {
 			defer wg.Done()
 			for i := 0; i < opsPerGoroutine; i++ {
 				title := fmt.Sprintf("task-g%d-i%d", gID, i)
-				_, err := tr.Create("concurrent-ns", title, "", providence.TaskTypeTask, providence.PriorityMedium, providence.PhaseUnscoped)
+				_, err := tr.Create("concurrent-ns", title, "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 				if err != nil {
 					errs <- fmt.Errorf("goroutine %d, op %d: %w", gID, i, err)
 				}
@@ -1003,7 +1003,7 @@ func TestConcurrentCreate(t *testing.T) {
 	}
 
 	// Verify all 200 tasks were created.
-	tasks, err := tr.List(providence.ListFilter{Namespace: "concurrent-ns"})
+	tasks, err := tr.List(provenance.ListFilter{Namespace: "concurrent-ns"})
 	if err != nil {
 		t.Fatalf("List() error: %v", err)
 	}
@@ -1031,7 +1031,7 @@ func TestListFilterByLabel(t *testing.T) {
 	}
 
 	// Filter by label "urgent" — should return A and B.
-	urgentTasks, err := tr.List(providence.ListFilter{Label: "urgent"})
+	urgentTasks, err := tr.List(provenance.ListFilter{Label: "urgent"})
 	if err != nil {
 		t.Fatalf("List(label=urgent) error: %v", err)
 	}
@@ -1040,7 +1040,7 @@ func TestListFilterByLabel(t *testing.T) {
 	}
 
 	// Filter by label "backend" — should return only A.
-	backendTasks, err := tr.List(providence.ListFilter{Label: "backend"})
+	backendTasks, err := tr.List(provenance.ListFilter{Label: "backend"})
 	if err != nil {
 		t.Fatalf("List(label=backend) error: %v", err)
 	}
@@ -1049,7 +1049,7 @@ func TestListFilterByLabel(t *testing.T) {
 	}
 
 	// Filter by non-existent label — should return zero.
-	noneTasks, err := tr.List(providence.ListFilter{Label: "nonexistent"})
+	noneTasks, err := tr.List(provenance.ListFilter{Label: "nonexistent"})
 	if err != nil {
 		t.Fatalf("List(label=nonexistent) error: %v", err)
 	}
@@ -1067,7 +1067,7 @@ func TestListFilterByNamespace(t *testing.T) {
 	_ = mustCreateTask(t, tr, "beta")
 
 	// Filter by namespace "alpha" — should return 2.
-	alphaTasks, err := tr.List(providence.ListFilter{Namespace: "alpha"})
+	alphaTasks, err := tr.List(provenance.ListFilter{Namespace: "alpha"})
 	if err != nil {
 		t.Fatalf("List(namespace=alpha) error: %v", err)
 	}
@@ -1076,7 +1076,7 @@ func TestListFilterByNamespace(t *testing.T) {
 	}
 
 	// Filter by namespace "beta" — should return 1.
-	betaTasks, err := tr.List(providence.ListFilter{Namespace: "beta"})
+	betaTasks, err := tr.List(provenance.ListFilter{Namespace: "beta"})
 	if err != nil {
 		t.Fatalf("List(namespace=beta) error: %v", err)
 	}
@@ -1085,7 +1085,7 @@ func TestListFilterByNamespace(t *testing.T) {
 	}
 
 	// Filter by non-existent namespace — should return 0.
-	noneTasks, err := tr.List(providence.ListFilter{Namespace: "gamma"})
+	noneTasks, err := tr.List(provenance.ListFilter{Namespace: "gamma"})
 	if err != nil {
 		t.Fatalf("List(namespace=gamma) error: %v", err)
 	}
@@ -1094,7 +1094,7 @@ func TestListFilterByNamespace(t *testing.T) {
 	}
 
 	// No namespace filter — should return all 3.
-	allTasks, err := tr.List(providence.ListFilter{})
+	allTasks, err := tr.List(provenance.ListFilter{})
 	if err != nil {
 		t.Fatalf("List(no filter) error: %v", err)
 	}

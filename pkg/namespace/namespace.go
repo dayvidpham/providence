@@ -1,11 +1,11 @@
 // Package namespace derives PROV-O namespace URIs from git repository metadata.
 //
-// A namespace is a URI that scopes providence IDs to a project. For git repos,
+// A namespace is a URI that scopes provenance IDs to a project. For git repos,
 // the canonical HTTPS remote URL is used directly (globally unique,
 // dereferenceable). For non-git directories, a file:// URI is used.
 //
 // This package has no dependencies on pkg/ptypes or any internal packages,
-// so it can be imported independently by both providence and pasture.
+// so it can be imported independently by both provenance and pasture.
 package namespace
 
 import (

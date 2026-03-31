@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dayvidpham/providence/pkg/namespace"
+	"github.com/dayvidpham/provenance/pkg/namespace"
 	"gopkg.in/yaml.v3"
 )
 
@@ -191,8 +191,8 @@ func TestDefaultNamespace_Integration(t *testing.T) {
 		t.Fatal("DefaultNamespace() returned empty string")
 	}
 
-	// When run in the providence repo, should derive from git remote.
-	if ns == "https://github.com/dayvidpham/providence" {
+	// When run in the provenance repo, should derive from git remote.
+	if ns == "https://github.com/dayvidpham/provenance" {
 		return // exact match — git remote path
 	}
 

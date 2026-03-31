@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 )
 
 // ---------------------------------------------------------------------------

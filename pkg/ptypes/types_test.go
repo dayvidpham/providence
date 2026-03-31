@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 )
 
 // ---------------------------------------------------------------------------

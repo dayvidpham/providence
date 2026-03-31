@@ -2,11 +2,11 @@
 // dependency tracker. It contains all enum types, ID types, entity structs,
 // supporting types, and sentinel errors.
 //
-// This package has ZERO dependencies on the root providence package or any
+// This package has ZERO dependencies on the root provenance package or any
 // internal/ package. It is safe to import from anywhere within the module.
 //
 // Consumers of the library should continue to use the root
-// "github.com/dayvidpham/providence" package, which re-exports everything
+// "github.com/dayvidpham/provenance" package, which re-exports everything
 // from ptypes via transparent type aliases.
 package ptypes
 
@@ -40,7 +40,7 @@ func (s Status) String() string {
 
 func (s Status) MarshalText() ([]byte, error) {
 	if !s.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid Status(%d) — valid range is 0–%d", int(s), len(statusStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid Status(%d) — valid range is 0–%d", int(s), len(statusStrings)-1)
 	}
 	return []byte(s.String()), nil
 }
@@ -54,7 +54,7 @@ func (s *Status) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown Status %q — valid values: %v — "+
+		"provenance: unknown Status %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, statusStrings[:],
 	)
@@ -96,7 +96,7 @@ func (p Priority) String() string {
 
 func (p Priority) MarshalText() ([]byte, error) {
 	if !p.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid Priority(%d) — valid range is 0–%d", int(p), len(priorityStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid Priority(%d) — valid range is 0–%d", int(p), len(priorityStrings)-1)
 	}
 	return []byte(p.String()), nil
 }
@@ -110,7 +110,7 @@ func (p *Priority) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown Priority %q — valid values: %v — "+
+		"provenance: unknown Priority %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, priorityStrings[:],
 	)
@@ -153,7 +153,7 @@ func (t TaskType) String() string {
 
 func (t TaskType) MarshalText() ([]byte, error) {
 	if !t.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid TaskType(%d) — valid range is 0–%d", int(t), len(taskTypeStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid TaskType(%d) — valid range is 0–%d", int(t), len(taskTypeStrings)-1)
 	}
 	return []byte(t.String()), nil
 }
@@ -167,7 +167,7 @@ func (t *TaskType) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown TaskType %q — valid values: %v — "+
+		"provenance: unknown TaskType %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, taskTypeStrings[:],
 	)
@@ -211,7 +211,7 @@ func (e EdgeKind) String() string {
 
 func (e EdgeKind) MarshalText() ([]byte, error) {
 	if !e.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid EdgeKind(%d) — valid range is 0–%d", int(e), len(edgeKindStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid EdgeKind(%d) — valid range is 0–%d", int(e), len(edgeKindStrings)-1)
 	}
 	return []byte(e.String()), nil
 }
@@ -225,7 +225,7 @@ func (e *EdgeKind) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown EdgeKind %q — valid values: %v — "+
+		"provenance: unknown EdgeKind %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, edgeKindStrings[:],
 	)
@@ -263,7 +263,7 @@ func (a AgentKind) String() string {
 
 func (a AgentKind) MarshalText() ([]byte, error) {
 	if !a.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid AgentKind(%d) — valid range is 0–%d", int(a), len(agentKindStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid AgentKind(%d) — valid range is 0–%d", int(a), len(agentKindStrings)-1)
 	}
 	return []byte(a.String()), nil
 }
@@ -277,7 +277,7 @@ func (a *AgentKind) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown AgentKind %q — valid values: %v — "+
+		"provenance: unknown AgentKind %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, agentKindStrings[:],
 	)
@@ -317,7 +317,7 @@ func (p Provider) String() string {
 
 func (p Provider) MarshalText() ([]byte, error) {
 	if !p.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid Provider(%d) — valid range is 0–%d", int(p), len(providerStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid Provider(%d) — valid range is 0–%d", int(p), len(providerStrings)-1)
 	}
 	return []byte(p.String()), nil
 }
@@ -331,7 +331,7 @@ func (p *Provider) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown Provider %q — valid values: %v — "+
+		"provenance: unknown Provider %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, providerStrings[:],
 	)
@@ -374,7 +374,7 @@ func (r Role) String() string {
 
 func (r Role) MarshalText() ([]byte, error) {
 	if !r.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid Role(%d) — valid range is 0–%d", int(r), len(roleStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid Role(%d) — valid range is 0–%d", int(r), len(roleStrings)-1)
 	}
 	return []byte(r.String()), nil
 }
@@ -388,7 +388,7 @@ func (r *Role) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown Role %q — valid values: %v — "+
+		"provenance: unknown Role %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, roleStrings[:],
 	)
@@ -448,7 +448,7 @@ func (p Phase) String() string {
 
 func (p Phase) MarshalText() ([]byte, error) {
 	if !p.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid Phase(%d) — valid range is 0–%d", int(p), len(phaseStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid Phase(%d) — valid range is 0–%d", int(p), len(phaseStrings)-1)
 	}
 	return []byte(p.String()), nil
 }
@@ -462,7 +462,7 @@ func (p *Phase) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown Phase %q — valid values: %v — "+
+		"provenance: unknown Phase %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, phaseStrings[:],
 	)
@@ -502,7 +502,7 @@ func (s Stage) String() string {
 
 func (s Stage) MarshalText() ([]byte, error) {
 	if !s.IsValid() {
-		return nil, fmt.Errorf("providence: cannot marshal invalid Stage(%d) — valid range is 0–%d", int(s), len(stageStrings)-1)
+		return nil, fmt.Errorf("provenance: cannot marshal invalid Stage(%d) — valid range is 0–%d", int(s), len(stageStrings)-1)
 	}
 	return []byte(s.String()), nil
 }
@@ -516,7 +516,7 @@ func (s *Stage) UnmarshalText(b []byte) error {
 		}
 	}
 	return fmt.Errorf(
-		"providence: unknown Stage %q — valid values: %v — "+
+		"provenance: unknown Stage %q — valid values: %v — "+
 			"fix by using one of the listed values",
 		text, stageStrings[:],
 	)

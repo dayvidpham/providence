@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	zs "zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 )

@@ -1,16 +1,16 @@
-package providence
+package provenance
 
 // reexports.go re-exports all public symbols from pkg/ptypes so that
-// existing consumers of "github.com/dayvidpham/providence" continue to work
+// existing consumers of "github.com/dayvidpham/provenance" continue to work
 // without any import changes.
 //
-// Type aliases are transparent: providence.TaskID and ptypes.TaskID are the
+// Type aliases are transparent: provenance.TaskID and ptypes.TaskID are the
 // same type. Constants are re-declared with the same values. Sentinel errors
 // and parse functions are re-exported as package-level vars/funcs.
 
 import (
-	"github.com/dayvidpham/providence/pkg/namespace"
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/pkg/namespace"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 )
 
 // ---------------------------------------------------------------------------

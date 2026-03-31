@@ -99,8 +99,8 @@ from_git_remote:
       description: "Trailing slash on HTTPS URL preserved"
 
     - name: https_already_clean
-      input: "https://github.com/dayvidpham/providence"
-      expected: "https://github.com/dayvidpham/providence"
+      input: "https://github.com/dayvidpham/provenance"
+      expected: "https://github.com/dayvidpham/provenance"
       description: "Already-canonical URL is a no-op"
 
     - name: scp_single_segment_path

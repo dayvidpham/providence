@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dayvidpham/providence/internal/sqlite"
-	"github.com/dayvidpham/providence/internal/testutil"
-	"github.com/dayvidpham/providence/pkg/ptypes"
+	"github.com/dayvidpham/provenance/internal/sqlite"
+	"github.com/dayvidpham/provenance/internal/testutil"
+	"github.com/dayvidpham/provenance/pkg/ptypes"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )

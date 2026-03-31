@@ -1,4 +1,4 @@
-package providence_test
+package provenance_test
 
 import (
 	_ "embed"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/dayvidpham/providence"
+	"github.com/dayvidpham/provenance"
 	"gopkg.in/yaml.v3"
 )
 
@@ -71,9 +71,9 @@ func TestCreate_Permutations(t *testing.T) {
 	for _, tt := range suite.TaskTypes {
 		for _, pr := range suite.Priorities {
 			for _, ph := range suite.Phases {
-				taskType := providence.TaskType(tt.Value)
-				priority := providence.Priority(pr.Value)
-				phase := providence.Phase(ph.Value)
+				taskType := provenance.TaskType(tt.Value)
+				priority := provenance.Priority(pr.Value)
+				phase := provenance.Phase(ph.Value)
 
 				testName := fmt.Sprintf("%s/%s/%s", tt.Name, pr.Name, ph.Name)
 				t.Run(testName, func(t *testing.T) {
@@ -94,7 +94,7 @@ func TestCreate_Permutations(t *testing.T) {
 					}
 
 					// Status must always be StatusOpen on creation.
-					if task.Status != providence.StatusOpen {
+					if task.Status != provenance.StatusOpen {
 						t.Errorf(
 							"Status = %v, want StatusOpen — "+
 								"Create must initialize all tasks with Status=StatusOpen",
@@ -163,13 +163,13 @@ func TestCreate_NamespaceValidation(t *testing.T) {
 				nc.Value,
 				"title",
 				"desc",
-				providence.TaskTypeBug,
-				providence.PriorityMedium,
-				providence.PhaseUnscoped,
+				provenance.TaskTypeBug,
+				provenance.PriorityMedium,
+				provenance.PhaseUnscoped,
 			)
 
 			if nc.ExpectError {
-				if !errors.Is(err, providence.ErrInvalidID) {
+				if !errors.Is(err, provenance.ErrInvalidID) {
 					t.Errorf(
 						"Create(namespace=%q) error = %v, want ErrInvalidID — "+
 							"an empty namespace is invalid and must be rejected with ErrInvalidID; "+
