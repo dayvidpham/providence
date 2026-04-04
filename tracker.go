@@ -26,8 +26,9 @@ import (
 // It delegates SQL to internal/sqlite, graph operations to internal/graph,
 // and traversal to internal/helpers.
 type sqliteTracker struct {
-	db    *dbsqlite.DB
-	graph dgraph.Graph[string, Task]
+	db       *dbsqlite.DB
+	graph    dgraph.Graph[string, Task]
+	registry ModelRegistry
 }
 
 // openTracker opens (or creates) a SQLite database at dbPath and returns
@@ -44,8 +45,9 @@ func openTracker(dbPath string, opts ...Option) (Tracker, error) {
 	}
 
 	return &sqliteTracker{
-		db:    db,
-		graph: intgraph.NewGraph(db),
+		db:       db,
+		graph:    intgraph.NewGraph(db),
+		registry: o.registry,
 	}, nil
 }
 
@@ -306,6 +308,13 @@ func (t *sqliteTracker) RegisterHumanAgent(namespace, name, contact string) (Hum
 }
 
 func (t *sqliteTracker) RegisterMLAgent(namespace string, role Role, provider Provider, modelName string) (MLAgent, error) {
+	if _, ok := t.registry.Lookup(provider, modelName); !ok {
+		return MLAgent{}, fmt.Errorf(
+			"%w: RegisterMLAgent — model (%s, %q) not found in registry — "+
+				"use a known (provider, name) combination from the model registry",
+			ErrNotFound, provider.String(), modelName,
+		)
+	}
 	mla, err := t.db.RegisterMLAgent(namespace, role, provider, modelName)
 	if err != nil {
 		return MLAgent{}, fmt.Errorf("provenance.Tracker.RegisterMLAgent: %w", err)

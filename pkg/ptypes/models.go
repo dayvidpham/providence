@@ -9,8 +9,10 @@ type ModelEntry struct {
 	Family      string   // model family, e.g. "claude-opus"
 }
 
-// ModelRegistry provides the set of known ML models for seeding
-// the ml_models reference table.
+// ModelRegistry is a queryable catalog of ML models.
+//
+// It is used at database creation time (Models for seeding) and at
+// agent registration time (Lookup for validation).
 //
 // Implementations:
 //   - provenance.DefaultModelRegistry() — built-in static models
@@ -18,4 +20,11 @@ type ModelEntry struct {
 type ModelRegistry interface {
 	// Models returns all known model entries.
 	Models() []ModelEntry
+
+	// Lookup returns the model entry matching the given provider and name,
+	// or false if the model is not in the registry.
+	Lookup(provider Provider, name string) (ModelEntry, bool)
+
+	// ModelsByProvider returns all models from a given provider.
+	ModelsByProvider(provider Provider) []ModelEntry
 }

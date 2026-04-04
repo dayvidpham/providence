@@ -61,6 +61,53 @@ func TestDefaultModelRegistry_ModelsReturnsCopy(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// DefaultModelRegistry — Lookup()
+// ---------------------------------------------------------------------------
+
+func TestDefaultModelRegistry_Lookup(t *testing.T) {
+	reg := provenance.DefaultModelRegistry()
+
+	// Known model
+	entry, ok := reg.Lookup(provenance.ProviderAnthropic, "claude-opus-4-6")
+	if !ok {
+		t.Fatal("Lookup(ProviderAnthropic, claude-opus-4-6) returned false")
+	}
+	if entry.DisplayName != "Claude Opus 4.6" {
+		t.Errorf("DisplayName = %q, want %q", entry.DisplayName, "Claude Opus 4.6")
+	}
+
+	// Unknown model
+	_, ok = reg.Lookup(provenance.ProviderAnthropic, "nonexistent")
+	if ok {
+		t.Error("Lookup(ProviderAnthropic, nonexistent) should return false")
+	}
+
+	// Wrong provider
+	_, ok = reg.Lookup(provenance.ProviderGoogle, "claude-opus-4-6")
+	if ok {
+		t.Error("Lookup(ProviderGoogle, claude-opus-4-6) should return false")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// DefaultModelRegistry — ModelsByProvider()
+// ---------------------------------------------------------------------------
+
+func TestDefaultModelRegistry_ModelsByProvider(t *testing.T) {
+	reg := provenance.DefaultModelRegistry()
+
+	anthropic := reg.ModelsByProvider(provenance.ProviderAnthropic)
+	if len(anthropic) != 3 {
+		t.Errorf("ModelsByProvider(Anthropic) = %d entries, want 3", len(anthropic))
+	}
+
+	google := reg.ModelsByProvider(provenance.ProviderGoogle)
+	if len(google) != 0 {
+		t.Errorf("ModelsByProvider(Google) = %d entries, want 0", len(google))
+	}
+}
+
+// ---------------------------------------------------------------------------
 // WithModelRegistry — custom registry
 // ---------------------------------------------------------------------------
 
@@ -72,6 +119,25 @@ type testRegistry struct {
 func (r *testRegistry) Models() []ptypes.ModelEntry {
 	out := make([]ptypes.ModelEntry, len(r.entries))
 	copy(out, r.entries)
+	return out
+}
+
+func (r *testRegistry) Lookup(provider provenance.Provider, name string) (ptypes.ModelEntry, bool) {
+	for _, m := range r.entries {
+		if m.Provider == provider && m.Name == name {
+			return m, true
+		}
+	}
+	return ptypes.ModelEntry{}, false
+}
+
+func (r *testRegistry) ModelsByProvider(provider provenance.Provider) []ptypes.ModelEntry {
+	var out []ptypes.ModelEntry
+	for _, m := range r.entries {
+		if m.Provider == provider {
+			out = append(out, m)
+		}
+	}
 	return out
 }
 
@@ -121,7 +187,7 @@ func TestWithModelRegistry_EmptyRegistry(t *testing.T) {
 }
 
 func TestWithModelRegistry_NilRegistry(t *testing.T) {
-	// Passing nil must not panic — the default registry is preserved.
+	// Passing untyped nil must not panic — the default registry is preserved.
 	tr, err := provenance.OpenMemory(provenance.WithModelRegistry(nil))
 	if err != nil {
 		t.Fatalf("OpenMemory with nil registry: %v", err)

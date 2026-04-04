@@ -43,3 +43,13 @@ func (r *defaultRegistry) Lookup(provider Provider, name string) (ModelEntry, bo
 	e, ok := r.index[registryKey{provider: provider, name: name}]
 	return e, ok
 }
+
+func (r *defaultRegistry) ModelsByProvider(provider Provider) []ModelEntry {
+	var out []ModelEntry
+	for _, m := range r.entries {
+		if m.Provider == provider {
+			out = append(out, m)
+		}
+	}
+	return out
+}

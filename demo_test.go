@@ -77,10 +77,10 @@ func TestDemo_CoreWorkflow(t *testing.T) {
 func TestDemo_DependencyGraph(t *testing.T) {
 	tr := openTestTracker(t)
 
-	request, _ := tr.Create("proj", "REQUEST", "", provenance.TaskTypeFeature, provenance.PriorityHigh, provenance.PhaseRequest)
-	proposal, _ := tr.Create("proj", "PROPOSAL-1", "", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
-	implPlan, _ := tr.Create("proj", "IMPL_PLAN", "", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhaseImplPlan)
-	slice1, _ := tr.Create("proj", "SLICE-1", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseWorkerSlices)
+	request := mustCreate(t, tr, "proj", "REQUEST", "", provenance.TaskTypeFeature, provenance.PriorityHigh, provenance.PhaseRequest)
+	proposal := mustCreate(t, tr, "proj", "PROPOSAL-1", "", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
+	implPlan := mustCreate(t, tr, "proj", "IMPL_PLAN", "", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhaseImplPlan)
+	slice1 := mustCreate(t, tr, "proj", "SLICE-1", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseWorkerSlices)
 
 	// Chain: REQUEST <- PROPOSAL <- IMPL_PLAN <- SLICE-1
 	mustAddEdge(t, tr, request.ID, proposal.ID.String(), provenance.EdgeBlockedBy)
@@ -88,26 +88,38 @@ func TestDemo_DependencyGraph(t *testing.T) {
 	mustAddEdge(t, tr, implPlan.ID, slice1.ID.String(), provenance.EdgeBlockedBy)
 
 	// Only SLICE-1 should be ready
-	ready, _ := tr.Ready()
+	ready, err := tr.Ready()
+	if err != nil {
+		t.Fatalf("Ready() failed: %v", err)
+	}
 	if len(ready) != 1 || ready[0].Title != "SLICE-1" {
 		t.Errorf("Ready() = %d tasks (want 1: SLICE-1), got titles: %v", len(ready), taskTitles(ready))
 	}
 
 	// REQUEST, PROPOSAL, IMPL_PLAN are blocked
-	blocked, _ := tr.Blocked()
+	blocked, err := tr.Blocked()
+	if err != nil {
+		t.Fatalf("Blocked() failed: %v", err)
+	}
 	if len(blocked) != 3 {
 		t.Errorf("Blocked() = %d tasks, want 3", len(blocked))
 	}
 
 	// Close SLICE-1 → IMPL_PLAN becomes ready
 	tr.CloseTask(slice1.ID, "Done")
-	ready2, _ := tr.Ready()
+	ready2, err := tr.Ready()
+	if err != nil {
+		t.Fatalf("Ready() after close failed: %v", err)
+	}
 	if !containsTitle(ready2, "IMPL_PLAN") {
 		t.Errorf("After closing SLICE-1, Ready() should include IMPL_PLAN, got: %v", taskTitles(ready2))
 	}
 
 	// DepTree from REQUEST
-	edges, _ := tr.DepTree(request.ID)
+	edges, err := tr.DepTree(request.ID)
+	if err != nil {
+		t.Fatalf("DepTree(request) failed: %v", err)
+	}
 	if len(edges) < 3 {
 		t.Errorf("DepTree(request) = %d edges, want >= 3", len(edges))
 	}
@@ -120,9 +132,9 @@ func TestDemo_DependencyGraph(t *testing.T) {
 func TestDemo_CycleDetection(t *testing.T) {
 	tr := openTestTracker(t)
 
-	a, _ := tr.Create("proj", "Task A", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
-	b, _ := tr.Create("proj", "Task B", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
-	c, _ := tr.Create("proj", "Task C", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
+	a := mustCreate(t, tr, "proj", "Task A", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
+	b := mustCreate(t, tr, "proj", "Task B", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
+	c := mustCreate(t, tr, "proj", "Task C", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseUnscoped)
 
 	// Direct cycle: A->B, B->A
 	mustAddEdge(t, tr, a.ID, b.ID.String(), provenance.EdgeBlockedBy)
@@ -152,9 +164,9 @@ func TestDemo_CycleDetection(t *testing.T) {
 func TestDemo_ProvenanceEdges(t *testing.T) {
 	tr := openTestTracker(t)
 
-	prop1, _ := tr.Create("proj", "PROPOSAL-1", "Initial", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
-	prop2, _ := tr.Create("proj", "PROPOSAL-2", "Revised", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
-	prop3, _ := tr.Create("proj", "PROPOSAL-3", "Final", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
+	prop1 := mustCreate(t, tr, "proj", "PROPOSAL-1", "Initial", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
+	prop2 := mustCreate(t, tr, "proj", "PROPOSAL-2", "Revised", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
+	prop3 := mustCreate(t, tr, "proj", "PROPOSAL-3", "Final", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
 
 	// Derivation chain
 	mustAddEdge(t, tr, prop2.ID, prop1.ID.String(), provenance.EdgeDerivedFrom)
@@ -166,13 +178,19 @@ func TestDemo_ProvenanceEdges(t *testing.T) {
 
 	// Query derivation lineage
 	derivedFrom := provenance.EdgeDerivedFrom
-	edges, _ := tr.Edges(prop3.ID, &derivedFrom)
+	edges, err := tr.Edges(prop3.ID, &derivedFrom)
+	if err != nil {
+		t.Fatalf("Edges(prop3, DerivedFrom) failed: %v", err)
+	}
 	if len(edges) != 1 || edges[0].TargetID != prop2.ID.String() {
 		t.Errorf("Edges(prop3, DerivedFrom) = %v, want 1 edge to prop2", edges)
 	}
 
 	// Provenance edges do NOT affect readiness
-	ready, _ := tr.Ready()
+	ready, err := tr.Ready()
+	if err != nil {
+		t.Fatalf("Ready() failed: %v", err)
+	}
 	if len(ready) != 3 {
 		t.Errorf("All 3 proposals should be ready (no EdgeBlockedBy), got %d", len(ready))
 	}
@@ -234,7 +252,7 @@ func TestDemo_PROVOAgents(t *testing.T) {
 func TestDemo_PROVOActivities(t *testing.T) {
 	tr := openTestTracker(t)
 
-	agent, _ := tr.RegisterMLAgent("aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
+	agent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
 
 	// Start activity
 	activity, err := tr.StartActivity(agent.ID, provenance.PhaseImplPlan, provenance.StageInProgress, "Decomposing into slices")
@@ -246,7 +264,7 @@ func TestDemo_PROVOActivities(t *testing.T) {
 	}
 
 	// Create task linked to activity
-	task, _ := tr.Create("aura", "IMPL_PLAN: feature X", "", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhaseImplPlan)
+	task := mustCreate(t, tr, "aura", "IMPL_PLAN: feature X", "", provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhaseImplPlan)
 	mustAddEdge(t, tr, task.ID, activity.ID.String(), provenance.EdgeGeneratedBy)
 	mustAddEdge(t, tr, task.ID, agent.ID.String(), provenance.EdgeAttributedTo)
 
@@ -260,7 +278,10 @@ func TestDemo_PROVOActivities(t *testing.T) {
 	}
 
 	// Query by agent
-	activities, _ := tr.Activities(&agent.ID)
+	activities, err := tr.Activities(&agent.ID)
+	if err != nil {
+		t.Fatalf("Activities(agent) failed: %v", err)
+	}
 	if len(activities) != 1 {
 		t.Errorf("Activities(agent) = %d, want 1", len(activities))
 	}
@@ -273,15 +294,18 @@ func TestDemo_PROVOActivities(t *testing.T) {
 func TestDemo_LabelsAndComments(t *testing.T) {
 	tr := openTestTracker(t)
 
-	agent, _ := tr.RegisterMLAgent("aura", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-opus-4-6")
-	task, _ := tr.Create("proj", "SLICE-1", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseWorkerSlices)
+	agent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-opus-4-6")
+	task := mustCreate(t, tr, "proj", "SLICE-1", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseWorkerSlices)
 
 	// Labels
 	tr.AddLabel(task.ID, "aura:p9-impl:s9-slice")
 	tr.AddLabel(task.ID, "aura:severity:blocker")
 	tr.AddLabel(task.ID, "aura:p9-impl:s9-slice") // idempotent
 
-	labels, _ := tr.Labels(task.ID)
+	labels, err := tr.Labels(task.ID)
+	if err != nil {
+		t.Fatalf("Labels(%v) failed: %v", task.ID, err)
+	}
 	if len(labels) != 2 {
 		t.Errorf("Labels = %d, want 2 (idempotent add)", len(labels))
 	}
@@ -295,7 +319,10 @@ func TestDemo_LabelsAndComments(t *testing.T) {
 		t.Errorf("Body = %q, want VOTE message", comment.Body)
 	}
 
-	comments, _ := tr.Comments(task.ID)
+	comments, err := tr.Comments(task.ID)
+	if err != nil {
+		t.Fatalf("Comments(%v) failed: %v", task.ID, err)
+	}
 	if len(comments) != 1 {
 		t.Errorf("Comments = %d, want 1", len(comments))
 	}
@@ -313,7 +340,7 @@ func TestDemo_Persistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("OpenSQLite session 1: %v", err)
 	}
-	task, _ := t1.Create("proj", "Persistent task", "", provenance.TaskTypeFeature, provenance.PriorityHigh, provenance.PhaseRequest)
+	task := mustCreate(t, t1, "proj", "Persistent task", "", provenance.TaskTypeFeature, provenance.PriorityHigh, provenance.PhaseRequest)
 	taskID := task.ID
 	t1.Close()
 
@@ -332,10 +359,16 @@ func TestDemo_Persistence(t *testing.T) {
 	t2.Close()
 
 	// In-memory: data does NOT survive
-	mem, _ := provenance.OpenMemory()
-	memTask, _ := mem.Create("proj", "Ephemeral", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseRequest)
+	mem, err := provenance.OpenMemory()
+	if err != nil {
+		t.Fatalf("OpenMemory: %v", err)
+	}
+	memTask := mustCreate(t, mem, "proj", "Ephemeral", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseRequest)
 	mem.Close()
-	mem2, _ := provenance.OpenMemory()
+	mem2, err := provenance.OpenMemory()
+	if err != nil {
+		t.Fatalf("OpenMemory (second): %v", err)
+	}
 	defer mem2.Close()
 	_, err = mem2.Show(memTask.ID)
 	if !errors.Is(err, provenance.ErrNotFound) {
@@ -351,15 +384,15 @@ func TestDemo_FullEpochSimulation(t *testing.T) {
 	tr := openTestTracker(t)
 
 	// --- Register agents ---
-	human, _ := tr.RegisterHumanAgent("aura", "David Pham", "dayvidpham@gmail.com")
-	architect, _ := tr.RegisterMLAgent("aura", provenance.RoleArchitect, provenance.ProviderAnthropic, "claude-opus-4-6")
-	supervisor, _ := tr.RegisterMLAgent("aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
-	workerAgent, _ := tr.RegisterMLAgent("aura", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-sonnet-4-6")
-	reviewerA, _ := tr.RegisterMLAgent("aura", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-opus-4-6")
+	human := mustRegisterHumanAgent(t, tr, "aura", "David Pham", "dayvidpham@gmail.com")
+	architect := mustRegisterMLAgent(t, tr, "aura", provenance.RoleArchitect, provenance.ProviderAnthropic, "claude-opus-4-6")
+	supervisor := mustRegisterMLAgent(t, tr, "aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
+	workerAgent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-sonnet-4-6")
+	reviewerA := mustRegisterMLAgent(t, tr, "aura", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-opus-4-6")
 
 	// --- Phase 1: REQUEST ---
-	reqActivity, _ := tr.StartActivity(human.ID, provenance.PhaseRequest, provenance.StageInProgress, "User submits request")
-	request, _ := tr.Create("aura", "REQUEST: Port codegen to Go", "verbatim request",
+	reqActivity := mustStartActivity(t, tr, human.ID, provenance.PhaseRequest, provenance.StageInProgress, "User submits request")
+	request := mustCreate(t, tr, "aura", "REQUEST: Port codegen to Go", "verbatim request",
 		provenance.TaskTypeFeature, provenance.PriorityHigh, provenance.PhaseRequest)
 	mustAddEdge(t, tr, request.ID, reqActivity.ID.String(), provenance.EdgeGeneratedBy)
 	mustAddEdge(t, tr, request.ID, human.ID.String(), provenance.EdgeAttributedTo)
@@ -367,8 +400,8 @@ func TestDemo_FullEpochSimulation(t *testing.T) {
 	tr.EndActivity(reqActivity.ID)
 
 	// --- Phase 3: PROPOSAL ---
-	propActivity, _ := tr.StartActivity(architect.ID, provenance.PhasePropose, provenance.StageInProgress, "Writing proposal")
-	proposal, _ := tr.Create("aura", "PROPOSAL-1: codegen port", "full plan",
+	propActivity := mustStartActivity(t, tr, architect.ID, provenance.PhasePropose, provenance.StageInProgress, "Writing proposal")
+	proposal := mustCreate(t, tr, "aura", "PROPOSAL-1: codegen port", "full plan",
 		provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhasePropose)
 	mustAddEdge(t, tr, proposal.ID, propActivity.ID.String(), provenance.EdgeGeneratedBy)
 	mustAddEdge(t, tr, proposal.ID, architect.ID.String(), provenance.EdgeAttributedTo)
@@ -380,18 +413,21 @@ func TestDemo_FullEpochSimulation(t *testing.T) {
 	tr.AddComment(proposal.ID, reviewerA.ID, "VOTE: ACCEPT — correctness verified")
 
 	// --- Phase 8: IMPL_PLAN ---
-	planActivity, _ := tr.StartActivity(supervisor.ID, provenance.PhaseImplPlan, provenance.StageInProgress, "Decomposing")
-	implPlan, _ := tr.Create("aura", "IMPL_PLAN: 3 slices", "",
+	planActivity := mustStartActivity(t, tr, supervisor.ID, provenance.PhaseImplPlan, provenance.StageInProgress, "Decomposing")
+	implPlan := mustCreate(t, tr, "aura", "IMPL_PLAN: 3 slices", "",
 		provenance.TaskTypeTask, provenance.PriorityHigh, provenance.PhaseImplPlan)
 	mustAddEdge(t, tr, implPlan.ID, planActivity.ID.String(), provenance.EdgeGeneratedBy)
 	mustAddEdge(t, tr, proposal.ID, implPlan.ID.String(), provenance.EdgeBlockedBy)
-	slice1, _ := tr.Create("aura", "SLICE-1: types", "",
+	slice1 := mustCreate(t, tr, "aura", "SLICE-1: types", "",
 		provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseWorkerSlices)
 	mustAddEdge(t, tr, implPlan.ID, slice1.ID.String(), provenance.EdgeBlockedBy)
 	tr.EndActivity(planActivity.ID)
 
 	// --- Readiness check ---
-	ready, _ := tr.Ready()
+	ready, err := tr.Ready()
+	if err != nil {
+		t.Fatalf("Ready() failed: %v", err)
+	}
 	if !containsTitle(ready, "SLICE-1: types") {
 		t.Errorf("Only SLICE-1 should be ready, got: %v", taskTitles(ready))
 	}
@@ -400,45 +436,72 @@ func TestDemo_FullEpochSimulation(t *testing.T) {
 	}
 
 	// --- Phase 9: Worker implements ---
-	implActivity, _ := tr.StartActivity(workerAgent.ID, provenance.PhaseWorkerSlices, provenance.StageInProgress, "Implementing")
+	implActivity := mustStartActivity(t, tr, workerAgent.ID, provenance.PhaseWorkerSlices, provenance.StageInProgress, "Implementing")
 	mustAddEdge(t, tr, slice1.ID, implActivity.ID.String(), provenance.EdgeGeneratedBy)
 	tr.CloseTask(slice1.ID, "Tests pass, committed")
 	tr.EndActivity(implActivity.ID)
 
 	// IMPL_PLAN should now be ready
-	ready2, _ := tr.Ready()
+	ready2, err := tr.Ready()
+	if err != nil {
+		t.Fatalf("Ready() after close failed: %v", err)
+	}
 	if !containsTitle(ready2, "IMPL_PLAN: 3 slices") {
 		t.Errorf("After closing SLICE-1, IMPL_PLAN should be ready, got: %v", taskTitles(ready2))
 	}
 
 	// --- Full provenance query ---
-	ancestors, _ := tr.Ancestors(request.ID)
+	ancestors, err := tr.Ancestors(request.ID)
+	if err != nil {
+		t.Fatalf("Ancestors(request) failed: %v", err)
+	}
 	if len(ancestors) < 2 {
 		t.Errorf("Ancestors(request) = %d, want >= 2 (proposal, implPlan, slice1)", len(ancestors))
 	}
 
-	descendants, _ := tr.Descendants(slice1.ID)
+	descendants, err := tr.Descendants(slice1.ID)
+	if err != nil {
+		t.Fatalf("Descendants(slice1) failed: %v", err)
+	}
 	if len(descendants) < 2 {
 		t.Errorf("Descendants(slice1) = %d, want >= 2 (implPlan, proposal, request)", len(descendants))
 	}
 
 	// Verify full lineage: every task has provenance edges
 	genBy := provenance.EdgeGeneratedBy
-	requestEdges, _ := tr.Edges(request.ID, &genBy)
+	requestEdges, err := tr.Edges(request.ID, &genBy)
+	if err != nil {
+		t.Fatalf("Edges(request, EdgeGeneratedBy) failed: %v", err)
+	}
 	if len(requestEdges) != 1 {
 		t.Errorf("REQUEST should have 1 EdgeGeneratedBy, got %d", len(requestEdges))
 	}
 	attrTo := provenance.EdgeAttributedTo
-	requestAttr, _ := tr.Edges(request.ID, &attrTo)
+	requestAttr, err := tr.Edges(request.ID, &attrTo)
+	if err != nil {
+		t.Fatalf("Edges(request, EdgeAttributedTo) failed: %v", err)
+	}
 	if len(requestAttr) != 1 {
 		t.Errorf("REQUEST should have 1 EdgeAttributedTo, got %d", len(requestAttr))
 	}
 
 	// Verify agent activity history
-	humanActivities, _ := tr.Activities(&human.ID)
-	architectActivities, _ := tr.Activities(&architect.ID)
-	supervisorActivities, _ := tr.Activities(&supervisor.ID)
-	workerActivities, _ := tr.Activities(&workerAgent.ID)
+	humanActivities, err := tr.Activities(&human.ID)
+	if err != nil {
+		t.Fatalf("Activities(human) failed: %v", err)
+	}
+	architectActivities, err := tr.Activities(&architect.ID)
+	if err != nil {
+		t.Fatalf("Activities(architect) failed: %v", err)
+	}
+	supervisorActivities, err := tr.Activities(&supervisor.ID)
+	if err != nil {
+		t.Fatalf("Activities(supervisor) failed: %v", err)
+	}
+	workerActivities, err := tr.Activities(&workerAgent.ID)
+	if err != nil {
+		t.Fatalf("Activities(worker) failed: %v", err)
+	}
 
 	if len(humanActivities) != 1 {
 		t.Errorf("Human activities = %d, want 1", len(humanActivities))
@@ -461,6 +524,42 @@ func TestDemo_FullEpochSimulation(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+func mustCreate(t *testing.T, tr provenance.Tracker, namespace, title, description string, taskType provenance.TaskType, priority provenance.Priority, phase provenance.Phase) provenance.Task {
+	t.Helper()
+	task, err := tr.Create(namespace, title, description, taskType, priority, phase)
+	if err != nil {
+		t.Fatalf("Create(%q) failed: %v", title, err)
+	}
+	return task
+}
+
+func mustRegisterHumanAgent(t *testing.T, tr provenance.Tracker, namespace, name, contact string) provenance.HumanAgent {
+	t.Helper()
+	agent, err := tr.RegisterHumanAgent(namespace, name, contact)
+	if err != nil {
+		t.Fatalf("RegisterHumanAgent(%q) failed: %v", name, err)
+	}
+	return agent
+}
+
+func mustRegisterMLAgent(t *testing.T, tr provenance.Tracker, namespace string, role provenance.Role, provider provenance.Provider, modelName string) provenance.MLAgent {
+	t.Helper()
+	agent, err := tr.RegisterMLAgent(namespace, role, provider, modelName)
+	if err != nil {
+		t.Fatalf("RegisterMLAgent(%s, %q) failed: %v", role, modelName, err)
+	}
+	return agent
+}
+
+func mustStartActivity(t *testing.T, tr provenance.Tracker, agentID provenance.AgentID, phase provenance.Phase, stage provenance.Stage, notes string) provenance.Activity {
+	t.Helper()
+	act, err := tr.StartActivity(agentID, phase, stage, notes)
+	if err != nil {
+		t.Fatalf("StartActivity failed: %v", err)
+	}
+	return act
+}
 
 func mustAddEdge(t *testing.T, tr provenance.Tracker, sourceID provenance.TaskID, targetID string, kind provenance.EdgeKind) {
 	t.Helper()
@@ -485,4 +584,3 @@ func containsTitle(tasks []provenance.Task, title string) bool {
 	}
 	return false
 }
-

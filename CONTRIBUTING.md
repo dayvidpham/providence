@@ -14,7 +14,7 @@ This guide covers the development workflow for Providence contributors. For codi
 
 ```bash
 git clone https://github.com/dayvidpham/provenance.git
-cd providence
+cd provenance
 go mod download
 ```
 
@@ -107,12 +107,12 @@ All four targets must succeed. If any fails, fix the issue and re-run.
 Use `git agent-commit` (not `git commit`):
 
 ```bash
-git agent-commit -m "feat(providence): add Tracker interface"
+git agent-commit -m "feat(provenance): add Tracker interface"
 ```
 
 For multi-line commit messages:
 ```bash
-git agent-commit -m "feat(providence): add Tracker interface
+git agent-commit -m "feat(provenance): add Tracker interface
 
 Implement the Tracker interface and OpenSQLite constructor as described in
 PROPOSAL-2. This enables consumers to create task trackers backed by SQLite.
@@ -224,7 +224,7 @@ Providence uses **integration tests** as the primary testing approach:
 
 ```go
 // tracker_test.go — integration test of the Tracker interface
-package providence_test
+package provenance_test
 
 import (
     "testing"
@@ -234,18 +234,18 @@ import (
 
 func TestTrackerCreateTask(t *testing.T) {
     // Create in-memory tracker
-    tracker, err := providence.OpenMemory()
+    tracker, err := provenance.OpenMemory()
     if err != nil {
         t.Fatalf("OpenMemory failed: %v", err)
     }
     defer tracker.Close()
 
     // Create task
-    task := providence.Task{
-        ID:       providence.TaskID{Namespace: "test", UUID: uuid.New()},
+    task := provenance.Task{
+        ID:       provenance.TaskID{Namespace: "test", UUID: uuid.New()},
         Title:    "Test Task",
-        Status:   providence.StatusOpen,
-        Priority: providence.PriorityMedium,
+        Status:   provenance.StatusOpen,
+        Priority: provenance.PriorityMedium,
     }
 
     // Store task
@@ -309,7 +309,7 @@ Ensure you're not importing C libraries or cgo-dependent packages. Providence de
 
 ### Make targets not found
 
-Ensure you're in the providence root directory and have `make` installed:
+Ensure you're in the provenance root directory and have `make` installed:
 ```bash
 which make       # Should show /usr/bin/make or similar
 ls -la Makefile  # Should exist

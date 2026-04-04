@@ -16,12 +16,13 @@ func defaultOptions() options {
 }
 
 // WithModelRegistry overrides the default model registry used to seed
-// the ml_models table. Pass a bestiary.Registry() here once available.
+// the ml_models table and validate model names at registration time.
 // A nil registry is ignored (the default is preserved).
 func WithModelRegistry(r ptypes.ModelRegistry) Option {
 	return func(o *options) {
-		if r != nil {
-			o.registry = r
+		if r == nil {
+			return
 		}
+		o.registry = r
 	}
 }

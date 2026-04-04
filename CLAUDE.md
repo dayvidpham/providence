@@ -18,14 +18,13 @@ provenance/
 ├── enums.go                # All iota enums: Status, Priority, TaskType, EdgeKind, AgentKind, Provider, Role, Phase, Stage
 ├── errors.go               # Sentinel errors and error constructors
 ├── tracker.go              # sqliteTracker implementation of Tracker interface
-├── tracker_test.go         # Integration tests for Tracker (black-box, package providence_test)
+├── tracker_test.go         # Integration tests for Tracker (black-box, package provenance_test)
 ├── internal/
 │   ├── graph/
 │   │   ├── store.go        # dominikbraun/graph Store[TaskID, Task] implementation backed by SQLite
 │   │   └── store_test.go   # Store implementation tests
 │   ├── sqlite/
 │   │   ├── db.go           # Database open/close, WAL config, schema migration
-│   │   ├── schema.go       # CREATE TABLE statements, indexes, migrations
 │   │   ├── tasks.go        # Task CRUD SQL operations
 │   │   ├── edges.go        # Edge insert/delete/query SQL operations
 │   │   ├── agents.go       # Agent TPT CRUD (base + 3 child tables)
@@ -52,7 +51,7 @@ provenance/
 
 | Package | Role |
 |---------|------|
-| `providence` (root) | Public API surface. All exported types, the `Tracker` interface, constructors (`OpenSQLite`, `OpenMemory`), and the internal `sqliteTracker` implementation. Consumers (e.g., pasture) import only this package. |
+| `provenance` (root) | Public API surface. All exported types, the `Tracker` interface, constructors (`OpenSQLite`, `OpenMemory`), and the internal `sqliteTracker` implementation. Consumers (e.g., pasture) import only this package. |
 | `internal/sqlite` | All SQL operations. Encapsulates the zombiezen SQLite driver. No graph logic here — pure relational CRUD including agent table-per-type operations. |
 | `internal/graph` | Implements `dominikbraun/graph.Store[TaskID, Task]` backed by `internal/sqlite`. Bridges graph library and persistence. |
 | `internal/helpers` | Graph traversal utilities (Ancestors, Descendants) composed from dominikbraun/graph primitives. |
@@ -176,20 +175,20 @@ GOOS=windows GOARCH=amd64  CGO_ENABLED=0 go build ./...
 
 Use Conventional Commits:
 ```
-feat(providence): add Tracker interface and OpenSQLite constructor
+feat(provenance): add Tracker interface and OpenSQLite constructor
 fix(sqlite): handle empty task list gracefully
-chore(providence): update go.sum after dependency bump
+chore(provenance): update go.sum after dependency bump
 docs: clarify EdgeKind semantics
 ```
 
 **IMPORTANT:** Workers must use `git agent-commit` instead of `git commit`:
 ```bash
-git agent-commit -m "feat(providence): add Tracker interface"
+git agent-commit -m "feat(provenance): add Tracker interface"
 ```
 
 ## SQLite and Database Conventions
 
-- Database schema lives in `internal/sqlite/schema.go` as CREATE TABLE statements.
+- Database schema and CREATE TABLE statements live in `internal/sqlite/db.go`.
 - All schema changes must include migration logic in `internal/sqlite/db.go`.
 - Use WAL (Write-Ahead Logging) mode for concurrent read access.
 - Use prepared statements for all queries to prevent SQL injection.

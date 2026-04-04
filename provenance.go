@@ -156,7 +156,7 @@ type Tracker interface {
 // The database file and parent directories are created if they do not exist.
 // The schema is applied on every open (idempotent).
 //
-// Use WithModelRegistry to override the default model seed data:
+// Use WithModelRegistry to override the default model registry:
 //
 //	tr, err := provenance.OpenSQLite(path, provenance.WithModelRegistry(bestiary.Registry()))
 func OpenSQLite(dbPath string, opts ...Option) (Tracker, error) {
