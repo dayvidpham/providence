@@ -154,16 +154,16 @@ func TestWithModelRegistry_CustomRegistry(t *testing.T) {
 	defer tr.Close()
 
 	// Custom model should be seeded and usable.
-	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderGoogle, "gemini-2.0-flash")
+	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderGoogle, provenance.ModelID("gemini-2.0-flash"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent with custom model failed: %v", err)
 	}
-	if agent.Model.Name != "gemini-2.0-flash" {
+	if agent.Model.Name != provenance.ModelID("gemini-2.0-flash") {
 		t.Errorf("Model.Name = %q, want %q", agent.Model.Name, "gemini-2.0-flash")
 	}
 
 	// Default models should NOT be seeded.
-	_, err = tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-opus-4-6")
+	_, err = tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 	if !errors.Is(err, provenance.ErrNotFound) {
 		t.Errorf("RegisterMLAgent with default model: got %v, want errors.Is(err, ErrNotFound)", err)
 	}
@@ -179,7 +179,7 @@ func TestWithModelRegistry_EmptyRegistry(t *testing.T) {
 	defer tr.Close()
 
 	// No models seeded — any RegisterMLAgent should fail with ErrNotFound.
-	_, err = tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-opus-4-6")
+	_, err = tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 	if !errors.Is(err, provenance.ErrNotFound) {
 		t.Errorf("RegisterMLAgent with empty registry: got %v, want errors.Is(err, ErrNotFound)", err)
 	}
@@ -197,7 +197,7 @@ func TestDefaultRegistry_LookupRejectsBeforeDB(t *testing.T) {
 	defer tr.Close()
 
 	_, err = tr.RegisterMLAgent("ns", provenance.RoleWorker,
-		provenance.ProviderLocal, "nonexistent-model")
+		provenance.ProviderLocal, provenance.ModelID("nonexistent-model"))
 	if !errors.Is(err, provenance.ErrNotFound) {
 		t.Errorf("got %v, want ErrNotFound", err)
 	}
@@ -212,11 +212,11 @@ func TestWithModelRegistry_NilRegistry(t *testing.T) {
 	defer tr.Close()
 
 	// Default models should still be seeded.
-	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-opus-4-6")
+	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent with nil registry (should use default): %v", err)
 	}
-	if agent.Model.Name != "claude-opus-4-6" {
+	if agent.Model.Name != provenance.ModelID("claude-opus-4-6") {
 		t.Errorf("Model.Name = %q, want %q", agent.Model.Name, "claude-opus-4-6")
 	}
 }

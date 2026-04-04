@@ -200,7 +200,7 @@ type SoftwareAgent struct {
 type MLModel struct {
 	ID       int      `json:"id"`
 	Provider Provider `json:"provider"`
-	Name     string   `json:"name"`
+	Name     ModelID  `json:"name"`
 }
 
 // Activity represents a recorded action (PROV-O Activity).

@@ -417,7 +417,7 @@ func TestRegisterMLAgent(t *testing.T) {
 	tr := openTestTracker(t)
 
 	// "claude-sonnet-4-6" is a model seeded in the schema at database creation time.
-	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-sonnet-4-6")
+	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, provenance.ModelID("claude-sonnet-4-6"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent() error: %v", err)
 	}
@@ -695,7 +695,7 @@ func TestAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RegisterHumanAgent() error: %v", err)
 	}
-	ml, err := tr.RegisterMLAgent("ns", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-sonnet-4-6")
+	ml, err := tr.RegisterMLAgent("ns", provenance.RoleReviewer, provenance.ProviderAnthropic, provenance.ModelID("claude-sonnet-4-6"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent() error: %v", err)
 	}

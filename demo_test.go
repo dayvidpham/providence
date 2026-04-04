@@ -213,11 +213,11 @@ func TestDemo_PROVOAgents(t *testing.T) {
 	}
 
 	// ML agents
-	sup, err := tr.RegisterMLAgent("aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
+	sup, err := tr.RegisterMLAgent("aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent(supervisor) failed: %v", err)
 	}
-	worker, err := tr.RegisterMLAgent("aura", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-sonnet-4-6")
+	worker, err := tr.RegisterMLAgent("aura", provenance.RoleWorker, provenance.ProviderAnthropic, provenance.ModelID("claude-sonnet-4-6"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent(worker) failed: %v", err)
 	}
@@ -252,7 +252,7 @@ func TestDemo_PROVOAgents(t *testing.T) {
 func TestDemo_PROVOActivities(t *testing.T) {
 	tr := openTestTracker(t)
 
-	agent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
+	agent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 
 	// Start activity
 	activity, err := tr.StartActivity(agent.ID, provenance.PhaseImplPlan, provenance.StageInProgress, "Decomposing into slices")
@@ -294,7 +294,7 @@ func TestDemo_PROVOActivities(t *testing.T) {
 func TestDemo_LabelsAndComments(t *testing.T) {
 	tr := openTestTracker(t)
 
-	agent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-opus-4-6")
+	agent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleReviewer, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 	task := mustCreate(t, tr, "proj", "SLICE-1", "", provenance.TaskTypeTask, provenance.PriorityMedium, provenance.PhaseWorkerSlices)
 
 	// Labels
@@ -385,10 +385,10 @@ func TestDemo_FullEpochSimulation(t *testing.T) {
 
 	// --- Register agents ---
 	human := mustRegisterHumanAgent(t, tr, "aura", "David Pham", "dayvidpham@gmail.com")
-	architect := mustRegisterMLAgent(t, tr, "aura", provenance.RoleArchitect, provenance.ProviderAnthropic, "claude-opus-4-6")
-	supervisor := mustRegisterMLAgent(t, tr, "aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, "claude-opus-4-6")
-	workerAgent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-sonnet-4-6")
-	reviewerA := mustRegisterMLAgent(t, tr, "aura", provenance.RoleReviewer, provenance.ProviderAnthropic, "claude-opus-4-6")
+	architect := mustRegisterMLAgent(t, tr, "aura", provenance.RoleArchitect, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
+	supervisor := mustRegisterMLAgent(t, tr, "aura", provenance.RoleSupervisor, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
+	workerAgent := mustRegisterMLAgent(t, tr, "aura", provenance.RoleWorker, provenance.ProviderAnthropic, provenance.ModelID("claude-sonnet-4-6"))
+	reviewerA := mustRegisterMLAgent(t, tr, "aura", provenance.RoleReviewer, provenance.ProviderAnthropic, provenance.ModelID("claude-opus-4-6"))
 
 	// --- Phase 1: REQUEST ---
 	reqActivity := mustStartActivity(t, tr, human.ID, provenance.PhaseRequest, provenance.StageInProgress, "User submits request")
@@ -543,7 +543,7 @@ func mustRegisterHumanAgent(t *testing.T, tr provenance.Tracker, namespace, name
 	return agent
 }
 
-func mustRegisterMLAgent(t *testing.T, tr provenance.Tracker, namespace string, role provenance.Role, provider provenance.Provider, modelName string) provenance.MLAgent {
+func mustRegisterMLAgent(t *testing.T, tr provenance.Tracker, namespace string, role provenance.Role, provider provenance.Provider, modelName provenance.ModelID) provenance.MLAgent {
 	t.Helper()
 	agent, err := tr.RegisterMLAgent(namespace, role, provider, modelName)
 	if err != nil {

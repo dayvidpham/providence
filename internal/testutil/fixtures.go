@@ -16,9 +16,9 @@ import (
 // These match the canonical Anthropic API model identifiers.
 func TestModels() []ptypes.ModelEntry {
 	return []ptypes.ModelEntry{
-		{Provider: ptypes.ProviderAnthropic, Name: "claude-opus-4-6", DisplayName: "Claude Opus 4.6", Family: "claude-opus"},
-		{Provider: ptypes.ProviderAnthropic, Name: "claude-sonnet-4-6", DisplayName: "Claude Sonnet 4.6", Family: "claude-sonnet"},
-		{Provider: ptypes.ProviderAnthropic, Name: "claude-haiku-4-5", DisplayName: "Claude Haiku 4.5", Family: "claude-haiku"},
+		{Provider: ptypes.ProviderAnthropic, Name: ptypes.ModelID("claude-opus-4-6"), DisplayName: "Claude Opus 4.6", Family: "claude-opus"},
+		{Provider: ptypes.ProviderAnthropic, Name: ptypes.ModelID("claude-sonnet-4-6"), DisplayName: "Claude Sonnet 4.6", Family: "claude-sonnet"},
+		{Provider: ptypes.ProviderAnthropic, Name: ptypes.ModelID("claude-haiku-4-5"), DisplayName: "Claude Haiku 4.5", Family: "claude-haiku"},
 	}
 }
 

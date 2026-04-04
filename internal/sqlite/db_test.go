@@ -528,7 +528,7 @@ func TestRegisterAndGetHumanAgent(t *testing.T) {
 func TestRegisterAndGetMLAgent(t *testing.T) {
 	db := openTestDB(t)
 
-	mla, err := db.RegisterMLAgent("ns", ptypes.RoleWorker, ptypes.ProviderAnthropic, "claude-opus-4-6")
+	mla, err := db.RegisterMLAgent("ns", ptypes.RoleWorker, ptypes.ProviderAnthropic, ptypes.ModelID("claude-opus-4-6"))
 	if err != nil {
 		t.Fatalf("RegisterMLAgent error: %v", err)
 	}
@@ -543,7 +543,7 @@ func TestRegisterAndGetMLAgent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMLAgent error: %v", err)
 	}
-	if got.Model.Name != "claude-opus-4-6" {
+	if got.Model.Name != ptypes.ModelID("claude-opus-4-6") {
 		t.Errorf("Model.Name = %q, want %q", got.Model.Name, "claude-opus-4-6")
 	}
 }
@@ -551,7 +551,7 @@ func TestRegisterAndGetMLAgent(t *testing.T) {
 func TestRegisterMLAgentUnknownModel(t *testing.T) {
 	db := openTestDB(t)
 
-	_, err := db.RegisterMLAgent("ns", ptypes.RoleWorker, ptypes.ProviderAnthropic, "nonexistent_model")
+	_, err := db.RegisterMLAgent("ns", ptypes.RoleWorker, ptypes.ProviderAnthropic, ptypes.ModelID("nonexistent_model"))
 	if err == nil {
 		t.Fatal("RegisterMLAgent should fail for unknown model")
 	}
@@ -1065,14 +1065,14 @@ func TestRegisterMLAgent_YAMLPermutations(t *testing.T) {
 				role := ptypes.Role(roleVal)
 				provider := ptypes.Provider(model.Provider)
 
-				mla, err := db.RegisterMLAgent("test-ns", role, provider, model.Name)
+				mla, err := db.RegisterMLAgent("test-ns", role, provider, ptypes.ModelID(model.Name))
 				if err != nil {
 					t.Fatalf("RegisterMLAgent(%v, %v, %q) unexpected error: %v", role, provider, model.Name, err)
 				}
 				if mla.Role != role {
 					t.Errorf("Role = %v, want %v", mla.Role, role)
 				}
-				if mla.Model.Name != model.Name {
+				if mla.Model.Name != ptypes.ModelID(model.Name) {
 					t.Errorf("Model.Name = %q, want %q", mla.Model.Name, model.Name)
 				}
 				if mla.Model.Provider != provider {
@@ -1090,7 +1090,7 @@ func TestRegisterMLAgent_YAMLPermutations(t *testing.T) {
 				if got.Role != role {
 					t.Errorf("GetMLAgent Role = %v, want %v", got.Role, role)
 				}
-				if got.Model.Name != model.Name {
+				if got.Model.Name != ptypes.ModelID(model.Name) {
 					t.Errorf("GetMLAgent Model.Name = %q, want %q", got.Model.Name, model.Name)
 				}
 			})
@@ -1105,7 +1105,7 @@ func TestRegisterMLAgent_YAMLPermutations(t *testing.T) {
 			db := openTestDB(t)
 
 			provider := ptypes.Provider(model.Provider)
-			_, err := db.RegisterMLAgent("test-ns", ptypes.RoleWorker, provider, model.Name)
+			_, err := db.RegisterMLAgent("test-ns", ptypes.RoleWorker, provider, ptypes.ModelID(model.Name))
 			if err == nil {
 				t.Fatalf("RegisterMLAgent(%v, %q) expected ErrNotFound, got nil", provider, model.Name)
 			}
@@ -1214,7 +1214,7 @@ func TestAgentKindMismatch_YAMLPermutations(t *testing.T) {
 				}
 				agentID = a.ID
 			case 1: // ml
-				a, err := db.RegisterMLAgent("test-ns", ptypes.RoleWorker, ptypes.ProviderAnthropic, "claude-opus-4-6")
+				a, err := db.RegisterMLAgent("test-ns", ptypes.RoleWorker, ptypes.ProviderAnthropic, ptypes.ModelID("claude-opus-4-6"))
 				if err != nil {
 					t.Fatalf("RegisterMLAgent error: %v", err)
 				}

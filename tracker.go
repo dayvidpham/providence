@@ -307,8 +307,8 @@ func (t *sqliteTracker) RegisterHumanAgent(namespace, name, contact string) (Hum
 	return ha, nil
 }
 
-func (t *sqliteTracker) RegisterMLAgent(namespace string, role Role, provider Provider, modelName string) (MLAgent, error) {
-	if _, ok := t.registry.Lookup(provider, modelName); !ok {
+func (t *sqliteTracker) RegisterMLAgent(namespace string, role Role, provider Provider, modelName ModelID) (MLAgent, error) {
+	if _, ok := t.registry.Lookup(provider, string(modelName)); !ok {
 		return MLAgent{}, fmt.Errorf(
 			"%w: RegisterMLAgent — model (%s, %q) not found in registry — "+
 				"use a known (provider, name) combination from the model registry",

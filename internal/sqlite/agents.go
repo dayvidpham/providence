@@ -40,7 +40,7 @@ func (db *DB) RegisterHumanAgent(namespace, name, contact string) (ptypes.HumanA
 // RegisterMLAgent registers a new ML agent. The (provider, modelName) pair must
 // exist in the ml_models seed table; returns ptypes.ErrNotFound if unknown.
 // Acquires the DB mutex.
-func (db *DB) RegisterMLAgent(namespace string, role ptypes.Role, provider ptypes.Provider, modelName string) (ptypes.MLAgent, error) {
+func (db *DB) RegisterMLAgent(namespace string, role ptypes.Role, provider ptypes.Provider, modelName ptypes.ModelID) (ptypes.MLAgent, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -49,7 +49,7 @@ func (db *DB) RegisterMLAgent(namespace string, role ptypes.Role, provider ptype
 	if err := sqlitex.Execute(db.conn,
 		`SELECT id FROM ml_models WHERE provider_id = (SELECT id FROM providers WHERE name = ?1) AND name = ?2`,
 		&sqlitex.ExecOptions{
-			Args: []any{string(provider), modelName},
+			Args: []any{string(provider), string(modelName)},
 			ResultFunc: func(stmt *zs.Stmt) error {
 				modelID = stmt.ColumnInt(0)
 				modelFound = true
@@ -211,7 +211,7 @@ func (db *DB) GetMLAgent(id ptypes.AgentID) (ptypes.MLAgent, error) {
 					Model: ptypes.MLModel{
 						ID:       stmt.ColumnInt(2),
 						Provider: ptypes.Provider(stmt.ColumnText(3)),
-						Name:     stmt.ColumnText(4),
+						Name:     ptypes.ModelID(stmt.ColumnText(4)),
 					},
 				}
 				found = true

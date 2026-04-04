@@ -111,7 +111,7 @@ type Tracker interface {
 
 	// RegisterMLAgent registers a new ML agent. The (provider, modelName) pair
 	// must exist in the ml_models seed table; returns ErrNotFound if unknown.
-	RegisterMLAgent(namespace string, role Role, provider Provider, modelName string) (MLAgent, error)
+	RegisterMLAgent(namespace string, role Role, provider Provider, modelName ModelID) (MLAgent, error)
 
 	// RegisterSoftwareAgent registers a new software agent with a UUIDv7 ID.
 	RegisterSoftwareAgent(namespace, name, version, source string) (SoftwareAgent, error)
