@@ -18,8 +18,4 @@ type ModelEntry struct {
 type ModelRegistry interface {
 	// Models returns all known model entries.
 	Models() []ModelEntry
-
-	// Lookup returns the model entry matching the given provider and name,
-	// or false if the model is not in the registry.
-	Lookup(provider Provider, name string) (ModelEntry, bool)
 }

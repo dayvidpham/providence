@@ -12,7 +12,6 @@ package sqlite
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -254,24 +253,16 @@ func (db *DB) seedReferenceData(models []ptypes.ModelEntry) error {
 
 // seedMLModels inserts model entries into the ml_models table.
 // Uses INSERT OR IGNORE so existing rows are preserved on re-open.
+// Each model is inserted with parameterized queries to prevent SQL injection.
 func (db *DB) seedMLModels(models []ptypes.ModelEntry) error {
-	if len(models) == 0 {
-		return nil
-	}
-
-	// Build a single INSERT OR IGNORE statement for all models.
-	var b strings.Builder
-	b.WriteString("INSERT OR IGNORE INTO ml_models (provider_id, name) VALUES ")
-	for i, m := range models {
-		if i > 0 {
-			b.WriteByte(',')
+	for _, m := range models {
+		if err := sqlitex.Execute(db.conn,
+			`INSERT OR IGNORE INTO ml_models (provider_id, name) VALUES (?, ?)`,
+			&sqlitex.ExecOptions{Args: []any{int(m.Provider), m.Name}},
+		); err != nil {
+			return fmt.Errorf("seedMLModels: inserting model (%s, %q): %w",
+				m.Provider.String(), m.Name, err)
 		}
-		// provider_id matches the Provider enum's integer value.
-		fmt.Fprintf(&b, "(%d,'%s')", int(m.Provider), m.Name)
-	}
-
-	if err := sqlitex.ExecuteTransient(db.conn, b.String(), nil); err != nil {
-		return fmt.Errorf("seedMLModels: %w — inserting %d models", err, len(models))
 	}
 	return nil
 }

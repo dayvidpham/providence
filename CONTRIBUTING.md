@@ -268,17 +268,17 @@ func TestTrackerCreateTask(t *testing.T) {
 ### Running Tests
 
 ```bash
-# Run all tests with race detection
-go test -race ./...
+# Run all tests (CGO_ENABLED=0 — pure Go, no cgo)
+CGO_ENABLED=0 go test -count=1 ./...
 
 # Run a specific test
-go test -race ./... -run TestTrackerCreateTask
+CGO_ENABLED=0 go test -count=1 ./... -run TestTrackerCreateTask
 
 # Run tests with verbose output
-go test -race -v ./...
+CGO_ENABLED=0 go test -count=1 -v ./...
 
 # Run tests with coverage
-go test -race -cover ./...
+CGO_ENABLED=0 go test -count=1 -cover ./...
 ```
 
 ## Build Targets
@@ -288,8 +288,8 @@ All build targets are defined in the `Makefile`:
 ```bash
 make fmt    # Format all Go files with gofmt
 make lint   # Run go vet for static analysis
-make test   # Run tests with -race flag
-make build  # Build with CGO_ENABLED=0
+make test   # CGO_ENABLED=0 go test -count=1 ./...
+make build  # CGO_ENABLED=0 go build ./...
 make clean  # Remove bin/ directory
 ```
 
@@ -300,15 +300,6 @@ Each target can be run independently. All four quality gates (`fmt`, `lint`, `te
 ### "go: warning: 'all' matched no packages"
 
 This warning appears when go.mod has dependencies but no source files import them yet. It's harmless and resolves once you add code.
-
-### Race detector finds issues
-
-Run your test in isolation and use `-race` with verbose output:
-```bash
-go test -race -v ./... -run TestName
-```
-
-Look for goroutine ID in the output to identify the conflicting access.
 
 ### CGO_ENABLED=0 build fails
 
