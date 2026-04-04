@@ -4,6 +4,8 @@
 {"issue_id":"providence-0ef","label":"aura:p9-impl:s9-slice"}
 {"issue_id":"providence-0lf","label":"aura:epic:providence"}
 {"issue_id":"providence-0lf","label":"aura:p9-impl:s9-slice"}
+{"issue_id":"providence-0lg","label":"aura:p4-plan:s4-review"}
+{"issue_id":"providence-0ud","label":"aura:p1-user:s1_3-explore"}
 {"issue_id":"providence-1el","label":"aura:epic:providence"}
 {"issue_id":"providence-1el","label":"aura:p9-impl:s9-slice"}
 {"issue_id":"providence-1x8","label":"aura:epic:providence"}
@@ -49,6 +51,7 @@
 {"issue_id":"providence-a97","label":"aura:p9-impl:s9-slice"}
 {"issue_id":"providence-avb","label":"aura:epic:providence"}
 {"issue_id":"providence-cbk","label":"aura:epic:providence"}
+{"issue_id":"providence-cl3","label":"aura:p4-plan:s4-review"}
 {"issue_id":"providence-cmb","label":"aura:epic:providence"}
 {"issue_id":"providence-cmb","label":"aura:p9-impl:s9-slice"}
 {"issue_id":"providence-d17","label":"aura:epic:providence"}
@@ -56,10 +59,12 @@
 {"issue_id":"providence-de6","label":"aura:p9-impl:s9-slice"}
 {"issue_id":"providence-dh7","label":"aura:p1-user:s1_1-classify"}
 {"issue_id":"providence-dhd","label":"aura:epic:providence"}
+{"issue_id":"providence-ghq","label":"aura:p2-user:s2_1-elicit"}
 {"issue_id":"providence-id1","label":"aura:epic:providence"}
 {"issue_id":"providence-id1","label":"aura:p2-user:s2_1-elicit"}
 {"issue_id":"providence-izw","label":"aura:epic:providence"}
 {"issue_id":"providence-jiw","label":"aura:epic:providence"}
+{"issue_id":"providence-jte","label":"aura:p3-plan:s3-propose"}
 {"issue_id":"providence-jxx","label":"aura:epic:providence"}
 {"issue_id":"providence-jxx","label":"aura:p9-impl:s9-slice"}
 {"issue_id":"providence-k7k","label":"aura:p9-impl:s9-slice"}
@@ -78,11 +83,15 @@
 {"issue_id":"providence-qe2","label":"aura:epic:providence"}
 {"issue_id":"providence-qur","label":"aura:p8-impl:s8-plan"}
 {"issue_id":"providence-rz1","label":"aura:epic:providence"}
+{"issue_id":"providence-sns","label":"aura:p1-user:s1_2-research"}
 {"issue_id":"providence-st6","label":"aura:epic:providence"}
 {"issue_id":"providence-tnc","label":"aura:epic:providence"}
+{"issue_id":"providence-tul","label":"aura:p2-user:s2_2-urd"}
+{"issue_id":"providence-tul","label":"aura:urd"}
 {"issue_id":"providence-ude","label":"aura:epic:providence"}
 {"issue_id":"providence-urp","label":"aura:epic:providence"}
 {"issue_id":"providence-urp","label":"aura:p8-impl:s8-plan"}
 {"issue_id":"providence-wpm","label":"aura:epic:providence"}
 {"issue_id":"providence-wpm","label":"aura:p9-impl:s9-slice"}
+{"issue_id":"providence-xnh","label":"aura:p4-plan:s4-review"}
 {"issue_id":"providence-z6d","label":"aura:epic:providence"}
