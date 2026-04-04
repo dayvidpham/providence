@@ -119,3 +119,21 @@ func TestWithModelRegistry_EmptyRegistry(t *testing.T) {
 		t.Errorf("RegisterMLAgent with empty registry: got %v, want errors.Is(err, ErrNotFound)", err)
 	}
 }
+
+func TestWithModelRegistry_NilRegistry(t *testing.T) {
+	// Passing nil must not panic — the default registry is preserved.
+	tr, err := provenance.OpenMemory(provenance.WithModelRegistry(nil))
+	if err != nil {
+		t.Fatalf("OpenMemory with nil registry: %v", err)
+	}
+	defer tr.Close()
+
+	// Default models should still be seeded.
+	agent, err := tr.RegisterMLAgent("ns", provenance.RoleWorker, provenance.ProviderAnthropic, "claude-opus-4-6")
+	if err != nil {
+		t.Fatalf("RegisterMLAgent with nil registry (should use default): %v", err)
+	}
+	if agent.Model.Name != "claude-opus-4-6" {
+		t.Errorf("Model.Name = %q, want %q", agent.Model.Name, "claude-opus-4-6")
+	}
+}
