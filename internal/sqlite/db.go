@@ -257,8 +257,8 @@ func (db *DB) seedReferenceData(models []ptypes.ModelEntry) error {
 func (db *DB) seedMLModels(models []ptypes.ModelEntry) error {
 	for _, m := range models {
 		if err := sqlitex.Execute(db.conn,
-			`INSERT OR IGNORE INTO ml_models (provider_id, name) VALUES (?, ?)`,
-			&sqlitex.ExecOptions{Args: []any{int(m.Provider), m.Name}},
+			`INSERT OR IGNORE INTO ml_models (provider_id, name) VALUES ((SELECT id FROM providers WHERE name = ?1), ?2)`,
+			&sqlitex.ExecOptions{Args: []any{string(m.Provider), string(m.Name)}},
 		); err != nil {
 			return fmt.Errorf("seedMLModels: inserting model (%s, %q): %w",
 				m.Provider.String(), m.Name, err)

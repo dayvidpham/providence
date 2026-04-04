@@ -47,9 +47,9 @@ func (db *DB) RegisterMLAgent(namespace string, role ptypes.Role, provider ptype
 	var modelID int
 	var modelFound bool
 	if err := sqlitex.Execute(db.conn,
-		`SELECT id FROM ml_models WHERE provider_id = ?1 AND name = ?2`,
+		`SELECT id FROM ml_models WHERE provider_id = (SELECT id FROM providers WHERE name = ?1) AND name = ?2`,
 		&sqlitex.ExecOptions{
-			Args: []any{int(provider), modelName},
+			Args: []any{string(provider), modelName},
 			ResultFunc: func(stmt *zs.Stmt) error {
 				modelID = stmt.ColumnInt(0)
 				modelFound = true
@@ -196,10 +196,11 @@ func (db *DB) GetMLAgent(id ptypes.AgentID) (ptypes.MLAgent, error) {
 	var mla ptypes.MLAgent
 	var found bool
 	err := sqlitex.Execute(db.conn,
-		`SELECT a.kind_id, m.role_id, ml.id, ml.provider_id, ml.name
+		`SELECT a.kind_id, m.role_id, ml.id, p.name, ml.name
 		 FROM agents a
 		 JOIN agents_ml m ON a.id = m.agent_id
 		 JOIN ml_models ml ON m.model_id = ml.id
+		 JOIN providers p ON ml.provider_id = p.id
 		 WHERE a.id = ?1`,
 		&sqlitex.ExecOptions{
 			Args: []any{id.String()},
@@ -209,7 +210,7 @@ func (db *DB) GetMLAgent(id ptypes.AgentID) (ptypes.MLAgent, error) {
 					Role:  ptypes.Role(stmt.ColumnInt(1)),
 					Model: ptypes.MLModel{
 						ID:       stmt.ColumnInt(2),
-						Provider: ptypes.Provider(stmt.ColumnInt(3)),
+						Provider: ptypes.Provider(stmt.ColumnText(3)),
 						Name:     stmt.ColumnText(4),
 					},
 				}

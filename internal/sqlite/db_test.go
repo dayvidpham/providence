@@ -810,7 +810,7 @@ type registerMLAgentFixtures struct {
 }
 
 type mlModelSpec struct {
-	Provider    int    `yaml:"provider"`
+	Provider    string `yaml:"provider"`
 	Name        string `yaml:"name"`
 	Description string `yaml:"description"`
 }
@@ -1058,7 +1058,7 @@ func TestRegisterMLAgent_YAMLPermutations(t *testing.T) {
 	for _, roleVal := range fix.RegisterMLAgent.Roles {
 		for _, model := range fix.RegisterMLAgent.KnownModels {
 			roleVal, model := roleVal, model // capture
-			testName := fmt.Sprintf("role_%d/provider_%d/%s", roleVal, model.Provider, model.Name)
+			testName := fmt.Sprintf("role_%d/provider_%s/%s", roleVal, model.Provider, model.Name)
 			t.Run(testName, func(t *testing.T) {
 				db := openTestDB(t)
 
@@ -1100,7 +1100,7 @@ func TestRegisterMLAgent_YAMLPermutations(t *testing.T) {
 	// Unknown models: must return ErrNotFound.
 	for _, model := range fix.RegisterMLAgent.UnknownModels {
 		model := model // capture
-		testName := fmt.Sprintf("unknown/provider_%d/%s", model.Provider, model.Name)
+		testName := fmt.Sprintf("unknown/provider_%s/%s", model.Provider, model.Name)
 		t.Run(testName, func(t *testing.T) {
 			db := openTestDB(t)
 

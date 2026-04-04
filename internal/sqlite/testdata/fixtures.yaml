@@ -419,11 +419,11 @@ list_tasks:
 #
 # Cross-product of roles × providers × model_states.
 # Seeded ml_models (from ModelRegistry via seedMLModels):
-#   provider_id=0 (anthropic), name="claude-opus-4-6"
-#   provider_id=0 (anthropic), name="claude-sonnet-4-6"
-#   provider_id=0 (anthropic), name="claude-haiku-4-5"
+#   provider="anthropic", name="claude-opus-4-6"
+#   provider="anthropic", name="claude-sonnet-4-6"
+#   provider="anthropic", name="claude-haiku-4-5"
 #
-# providers: 0=anthropic, 1=google, 2=openai, 3=local
+# providers: "anthropic", "google", "openai", "local"
 # roles: 0=human, 1=architect, 2=supervisor, 3=worker, 4=reviewer
 
 register_ml_agent:
@@ -434,28 +434,28 @@ register_ml_agent:
     - 3
     - 4
 
-  # Known (provider_id, model_name) pairs seeded at DB creation time.
+  # Known (provider, model_name) pairs seeded at DB creation time.
   # Registering with these must succeed.
   known_models:
-    - provider: 0
+    - provider: "anthropic"
       name: "claude-opus-4-6"
-    - provider: 0
+    - provider: "anthropic"
       name: "claude-sonnet-4-6"
-    - provider: 0
+    - provider: "anthropic"
       name: "claude-haiku-4-5"
 
   # Unknown (provider, model_name) pairs that must return ErrNotFound.
   unknown_models:
-    - provider: 1
+    - provider: "google"
       name: "gemini_pro"
       description: "Unknown Google model"
-    - provider: 2
+    - provider: "openai"
       name: "gpt4"
       description: "Unknown OpenAI model"
-    - provider: 3
+    - provider: "local"
       name: "llama3"
       description: "Unknown local model"
-    - provider: 0
+    - provider: "anthropic"
       name: "claude_nonexistent"
       description: "Unknown Anthropic model name"
 
