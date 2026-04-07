@@ -268,17 +268,17 @@ func TestTrackerCreateTask(t *testing.T) {
 ### Running Tests
 
 ```bash
-# Run all tests (CGO_ENABLED=0 — pure Go, no cgo)
-CGO_ENABLED=0 go test -count=1 ./...
+# Run all tests with race detection
+CGO_ENABLED=1 go test -race -count=1 ./...
 
 # Run a specific test
-CGO_ENABLED=0 go test -count=1 ./... -run TestTrackerCreateTask
+CGO_ENABLED=1 go test -race -count=1 ./... -run TestTrackerCreateTask
 
 # Run tests with verbose output
-CGO_ENABLED=0 go test -count=1 -v ./...
+CGO_ENABLED=1 go test -race -count=1 -v ./...
 
 # Run tests with coverage
-CGO_ENABLED=0 go test -count=1 -cover ./...
+CGO_ENABLED=1 go test -race -count=1 -cover ./...
 ```
 
 ## Build Targets
@@ -287,8 +287,8 @@ All build targets are defined in the `Makefile`:
 
 ```bash
 make fmt    # Format all Go files with gofmt
-make lint   # Run go vet for static analysis
-make test   # CGO_ENABLED=0 go test -count=1 ./...
+make lint   # go vet ./... + ast-grep scan
+make test   # CGO_ENABLED=1 go test -race -count=1 ./...
 make build  # CGO_ENABLED=0 go build ./...
 make clean  # Remove bin/ directory
 ```
