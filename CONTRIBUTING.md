@@ -1,6 +1,6 @@
 # Contributing to Provenance
 
-This guide covers the development workflow for Provenance contributors. For coding standards, see [CLAUDE.md](CLAUDE.md).
+This guide covers the development workflow for Provenance contributors. For coding standards, see [CLAUDE.md](CLAUDE.md). For the domain model and PROV-O/PROV-DM alignment, see [CONCEPTS.md](CONCEPTS.md).
 
 ## Getting Started
 

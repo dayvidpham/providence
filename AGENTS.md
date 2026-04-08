@@ -2,6 +2,8 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
+For the domain model and PROV-O/PROV-DM alignment, see [CONCEPTS.md](CONCEPTS.md).
+
 ## Quick Reference
 
 ```bash
