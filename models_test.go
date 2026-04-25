@@ -10,6 +10,42 @@ import (
 )
 
 // ---------------------------------------------------------------------------
+// IsKnown — catalog membership
+// ---------------------------------------------------------------------------
+
+func TestIsKnown_KnownProviders(t *testing.T) {
+	knownProviders := []provenance.Provider{
+		provenance.ProviderAnthropic,
+		provenance.ProviderGoogle,
+		provenance.ProviderOpenAI,
+	}
+	for _, p := range knownProviders {
+		if !provenance.IsKnown(p) {
+			t.Errorf("IsKnown(%q) = false, want true", p)
+		}
+	}
+}
+
+func TestIsKnown_UnknownProviders(t *testing.T) {
+	unknownProviders := []provenance.Provider{
+		"completely-unknown-vendor",
+		"not-a-real-provider",
+		"made-up-corp",
+	}
+	for _, p := range unknownProviders {
+		if provenance.IsKnown(p) {
+			t.Errorf("IsKnown(%q) = true, want false", p)
+		}
+	}
+}
+
+func TestIsKnown_EmptyString(t *testing.T) {
+	if provenance.IsKnown("") {
+		t.Error("IsKnown(\"\") = true, want false")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // DefaultModelRegistry — Models()
 // ---------------------------------------------------------------------------
 
@@ -114,6 +150,54 @@ func TestDefaultModelRegistry_ModelsByProvider(t *testing.T) {
 				t.Errorf("ModelsByProvider(%s) returned entry with Provider=%s", p, m.Provider)
 			}
 		}
+	}
+}
+
+// TestRegistryFromBestiary_SyntheticProviders verifies that RegistryFromBestiary
+// accepts an open provider set beyond the 3 providers in the pinned bestiary
+// static dataset. It builds a synthetic []bestiary.ModelInfo containing 5
+// non-standard provider strings, passes it through RegistryFromBestiary, and
+// asserts that ModelsByProvider returns exactly the expected entries — proving
+// the adapter has no closed-enum rejection and works for all 110+ providers.
+func TestRegistryFromBestiary_SyntheticProviders(t *testing.T) {
+	syntheticProviders := []string{
+		"amazon-bedrock",
+		"azure-openai",
+		"vertex",
+		"fireworks",
+		"together",
+	}
+
+	var syntheticModels []bestiary.ModelInfo
+	for _, prov := range syntheticProviders {
+		syntheticModels = append(syntheticModels, bestiary.ModelInfo{
+			ID:          bestiary.ModelID(prov + "-model-1"),
+			Provider:    bestiary.Provider(prov),
+			DisplayName: prov + " Model 1",
+		})
+		syntheticModels = append(syntheticModels, bestiary.ModelInfo{
+			ID:          bestiary.ModelID(prov + "-model-2"),
+			Provider:    bestiary.Provider(prov),
+			DisplayName: prov + " Model 2",
+		})
+	}
+
+	reg := provenance.RegistryFromBestiary(syntheticModels)
+
+	for _, prov := range syntheticProviders {
+		t.Run(prov, func(t *testing.T) {
+			p := provenance.Provider(prov)
+			entries := reg.ModelsByProvider(p)
+			if len(entries) != 2 {
+				t.Errorf("ModelsByProvider(%q) returned %d entries, want 2", prov, len(entries))
+				return
+			}
+			for _, e := range entries {
+				if e.Provider != p {
+					t.Errorf("entry.Provider = %q, want %q", e.Provider, p)
+				}
+			}
+		})
 	}
 }
 
