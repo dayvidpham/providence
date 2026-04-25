@@ -14,7 +14,7 @@ type inMemoryRegistry struct {
 
 type registryKey struct {
 	provider Provider
-	name     string
+	name     ModelID
 }
 
 // NewRegistry creates a ModelRegistry from the given entries.
@@ -22,7 +22,7 @@ type registryKey struct {
 func NewRegistry(entries []ModelEntry) ptypes.ModelRegistry {
 	idx := make(map[registryKey]ModelEntry, len(entries))
 	for _, m := range entries {
-		idx[registryKey{provider: m.Provider, name: string(m.Name)}] = m
+		idx[registryKey{provider: m.Provider, name: m.Name}] = m
 	}
 	return &inMemoryRegistry{entries: entries, index: idx}
 }
@@ -40,7 +40,7 @@ func (r *inMemoryRegistry) Models() []ModelEntry {
 }
 
 func (r *inMemoryRegistry) Lookup(provider Provider, name string) (ModelEntry, bool) {
-	e, ok := r.index[registryKey{provider: provider, name: name}]
+	e, ok := r.index[registryKey{provider: provider, name: ModelID(name)}]
 	return e, ok
 }
 

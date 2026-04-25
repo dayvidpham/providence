@@ -18,8 +18,9 @@ type ModelEntry struct {
 // agent registration time (Lookup for validation).
 //
 // Implementations:
-//   - provenance.DefaultModelRegistry() — built-in static models
-//   - bestiary.Registry() — full models.dev catalog (future)
+//   - provenance.DefaultModelRegistry() — backed by bestiary.Models() (single source of truth)
+//   - provenance.NewRegistry(entries) — custom registries for tests or non-bestiary sources
+//   - provenance.RegistryFromBestiary(models) — adapter from bestiary model data
 type ModelRegistry interface {
 	// Models returns all known model entries.
 	Models() []ModelEntry

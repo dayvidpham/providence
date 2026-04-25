@@ -158,7 +158,8 @@ type Tracker interface {
 //
 // Use WithModelRegistry to override the default model registry:
 //
-//	tr, err := provenance.OpenSQLite(path, provenance.WithModelRegistry(bestiary.Registry()))
+//	tr, err := provenance.OpenSQLite(path,
+//		provenance.WithModelRegistry(provenance.RegistryFromBestiary(bestiary.Models())))
 func OpenSQLite(dbPath string, opts ...Option) (Tracker, error) {
 	return openTracker(dbPath, opts...)
 }

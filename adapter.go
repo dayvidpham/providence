@@ -7,7 +7,6 @@ import (
 
 // RegistryFromBestiary converts bestiary model data into a provenance ModelRegistry.
 // Only Provider, Name (as ModelID), DisplayName, and Family are extracted.
-// This is the only file in provenance that imports bestiary.
 func RegistryFromBestiary(models []bestiary.ModelInfo) ptypes.ModelRegistry {
 	entries := make([]ptypes.ModelEntry, len(models))
 	for i, m := range models {

@@ -442,6 +442,9 @@ func TestRegisterMLAgent(t *testing.T) {
 	if retrieved.Model.Name != "claude-sonnet-4-6" {
 		t.Errorf("Retrieved model name = %q, want %q", retrieved.Model.Name, "claude-sonnet-4-6")
 	}
+	if retrieved.Model.Provider != provenance.ProviderAnthropic {
+		t.Errorf("Retrieved Provider = %v, want ProviderAnthropic", retrieved.Model.Provider)
+	}
 }
 
 func TestStartAndEndActivity(t *testing.T) {

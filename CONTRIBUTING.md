@@ -307,6 +307,15 @@ Ensure you're not importing C libraries or cgo-dependent packages. Provenance de
 - ✓ `zombiezen.com/go/sqlite` (pure Go)
 - ✗ `github.com/mattn/go-sqlite3` (CGo)
 
+### Why does `modernc.org/sqlite` appear in `go.mod`?
+
+`modernc.org/sqlite` shows up as an **indirect** dependency even though we don't import it directly. It is pulled in transitively through:
+
+- `zombiezen.com/go/sqlite` (our SQLite driver) — uses `modernc.org/sqlite/lib` for the embedded SQLite C-translated-to-Go runtime.
+- `github.com/dayvidpham/bestiary` — uses `modernc.org/sqlite` internally for its own catalog cache.
+
+This is **expected and pure-Go**: `modernc.org/sqlite` is a CGo-free port of SQLite (the C source is mechanically translated to Go). Auditors who flag it should verify it ships under the same pure-Go guarantee — `CGO_ENABLED=0 go build ./...` continues to succeed.
+
 ### Make targets not found
 
 Ensure you're in the provenance root directory and have `make` installed:

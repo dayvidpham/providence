@@ -100,9 +100,19 @@ func TestDefaultModelRegistry_ModelsByProvider(t *testing.T) {
 		t.Error("ModelsByProvider(Anthropic) missing claude-opus-4-6")
 	}
 
-	local := reg.ModelsByProvider(provenance.ProviderLocal)
-	if len(local) != 0 {
-		t.Errorf("ModelsByProvider(Local) = %d, want 0", len(local))
+	// ModelsByProvider must return only models with the requested provider —
+	// content-agnostic so the assertion stays valid as bestiary's catalog grows.
+	for _, p := range []provenance.Provider{
+		provenance.ProviderAnthropic,
+		provenance.ProviderGoogle,
+		provenance.ProviderOpenAI,
+		provenance.ProviderLocal,
+	} {
+		for _, m := range reg.ModelsByProvider(p) {
+			if m.Provider != p {
+				t.Errorf("ModelsByProvider(%s) returned entry with Provider=%s", p, m.Provider)
+			}
+		}
 	}
 }
 
