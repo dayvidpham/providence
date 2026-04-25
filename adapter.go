@@ -8,7 +8,8 @@ import (
 // IsKnown reports whether p is a member of the bestiary provider catalog.
 //
 // This is the catalog-membership check that pkg/ptypes.Provider.IsValid() cannot
-// provide (pkg/ptypes is zero-dep and has no access to the bestiary catalog).
+// provide (pkg/ptypes is kept free of bestiary-catalog imports to avoid cyclic
+// imports, and has no access to the bestiary catalog).
 // IsValid() only rejects the empty string; IsKnown() verifies the provider
 // string is recognized by the bestiary API.
 //

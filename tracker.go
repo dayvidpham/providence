@@ -2,7 +2,8 @@ package provenance
 
 // tracker.go contains the sqliteTracker implementation of the Tracker interface.
 //
-// Architecture: Types live in pkg/ptypes (no dependencies). The SQL persistence
+// Architecture: Types live in pkg/ptypes (no bestiary-catalog dependencies; leaf-package
+// layering to avoid cyclic imports). The SQL persistence
 // layer lives in internal/sqlite. The graph store adapter lives in
 // internal/graph. Graph traversal helpers live in internal/helpers.
 // This root package imports all of them and wires them together.

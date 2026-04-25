@@ -303,7 +303,8 @@ func (a AgentKind) IsValid() bool {
 //
 // For catalog membership checks use provenance.IsKnown(p) from the root
 // provenance package. IsValid() here only rejects the empty string; the
-// pkg/ptypes package is zero-dep and has no access to the bestiary catalog.
+// pkg/ptypes package imports no bestiary-catalog packages (leaf-package layering
+// to avoid cyclic imports) and has no access to the bestiary catalog.
 type Provider string
 
 const (
@@ -341,8 +342,9 @@ func (p *Provider) UnmarshalText(b []byte) error {
 //
 // For catalog membership (i.e. "is this provider known to the bestiary API?"),
 // use provenance.IsKnown(p) from the root provenance package, which delegates
-// to bestiary.Provider(p).IsKnown(). pkg/ptypes has no bestiary dependency and
-// cannot perform catalog membership checks.
+// to bestiary.Provider(p).IsKnown(). pkg/ptypes imports no bestiary-catalog
+// packages (leaf-package layering; no parent-package import) and cannot
+// perform catalog membership checks.
 func (p Provider) IsValid() bool {
 	return strings.TrimSpace(string(p)) != ""
 }
