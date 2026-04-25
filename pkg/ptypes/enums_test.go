@@ -3,6 +3,7 @@ package ptypes_test
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/dayvidpham/provenance/pkg/ptypes"
@@ -366,6 +367,58 @@ func TestProviderRoundTrip(t *testing.T) {
 	}
 }
 
+// TestProvider_EmptyMarshal documents that MarshalText on an empty Provider is
+// permissive: it returns empty bytes without error. Before the open-set refactor,
+// MarshalText rejected empty Providers via an IsValid() guard. The current
+// implementation is unconditional — callers should use IsValid() to guard empty
+// values before marshaling if they need strict validation.
+func TestProvider_EmptyMarshal(t *testing.T) {
+	var p ptypes.Provider // zero value — empty string
+	b, err := p.MarshalText()
+	if err != nil {
+		t.Errorf("Provider(\"\").MarshalText() returned error %v, want nil — empty marshal must be permissive", err)
+	}
+	if string(b) != "" {
+		t.Errorf("Provider(\"\").MarshalText() = %q, want %q", string(b), "")
+	}
+}
+
+// TestProvider_WhitespaceUnmarshal verifies that UnmarshalText strips leading
+// and trailing whitespace before storing, ensuring consistency with IsValid()
+// which also uses TrimSpace to reject whitespace-only strings.
+// Without trimming, UnmarshalText("  anthropic  ") would store Provider("  anthropic  ")
+// and IsValid() would return true (non-empty), but the stored value would never
+// match a well-known constant — a subtle round-trip asymmetry.
+func TestProvider_WhitespaceUnmarshal(t *testing.T) {
+	cases := []struct {
+		input string
+		want  string
+	}{
+		// Leading/trailing whitespace is stripped
+		{"  anthropic  ", "anthropic"},
+		{"\tanthropic\n", "anthropic"},
+		{"  Amazon-Bedrock  ", "amazon-bedrock"},
+		// Whitespace-only inputs become empty string after trim
+		{"   ", ""},
+		{"\t\n", ""},
+	}
+	for _, c := range cases {
+		var p ptypes.Provider
+		if err := p.UnmarshalText([]byte(c.input)); err != nil {
+			t.Errorf("UnmarshalText(%q) returned error %v, want nil", c.input, err)
+		}
+		if string(p) != c.want {
+			t.Errorf("UnmarshalText(%q) stored %q, want %q", c.input, string(p), c.want)
+		}
+		// IsValid() on the stored value must be consistent with whether the
+		// result is non-empty (no more asymmetry).
+		wantValid := c.want != ""
+		if p.IsValid() != wantValid {
+			t.Errorf("Provider(%q).IsValid() = %v, want %v (after UnmarshalText(%q))", string(p), p.IsValid(), wantValid, c.input)
+		}
+	}
+}
+
 func TestProviderStringValues(t *testing.T) {
 	cases := []struct {
 		p    ptypes.Provider
@@ -416,25 +469,40 @@ func TestProviderIsValid(t *testing.T) {
 }
 
 // TestProvider_UnmarshalUnknownAccepted asserts that UnmarshalText returns nil
-// for arbitrary strings that are not in the well-known 4-value set.
-// This is the key permissiveness test: no rejection of unknown providers.
+// for arbitrary strings that are not in the well-known 4-value set, and that
+// the stored value is always the lowercased form of the input.
+// Mixed-case inputs exercise the lowercasing behavior — without them the
+// assertion would be vacuous (strings.ToLower of an already-lowercase string
+// is a no-op, so a bug that removed lowercasing would still pass).
 func TestProvider_UnmarshalUnknownAccepted(t *testing.T) {
-	unknowns := []string{
-		"amazon-bedrock",
-		"completely-unknown-vendor",
-		"mistral",
-		"cohere",
-		"xai",
-		"vertex-ai",
+	cases := []struct {
+		input string
+		want  string
+	}{
+		// Already-lowercase inputs — basic permissiveness
+		{"amazon-bedrock", "amazon-bedrock"},
+		{"mistral", "mistral"},
+		{"cohere", "cohere"},
+		{"vertex-ai", "vertex-ai"},
+		// Mixed-case inputs — exercises the lowercasing path
+		{"COMPLETELY-UNKNOWN", "completely-unknown"},
+		{"Mistral", "mistral"},
+		{"Amazon-Bedrock", "amazon-bedrock"},
+		{"XAI", "xai"},
 	}
-	for _, s := range unknowns {
+	for _, c := range cases {
 		var p ptypes.Provider
-		if err := p.UnmarshalText([]byte(s)); err != nil {
-			t.Errorf("UnmarshalText(%q) returned error %v, want nil — Provider must be permissive", s, err)
+		if err := p.UnmarshalText([]byte(c.input)); err != nil {
+			t.Errorf("UnmarshalText(%q) returned error %v, want nil — Provider must be permissive", c.input, err)
 		}
-		// Value must be stored (lowercased)
-		if string(p) != s {
-			t.Errorf("UnmarshalText(%q) stored %q, want %q", s, string(p), s)
+		// Value must be stored lowercased (strings.ToLower of the input).
+		want := strings.ToLower(c.input)
+		if string(p) != want {
+			t.Errorf("UnmarshalText(%q) stored %q, want %q", c.input, string(p), want)
+		}
+		// Sanity-check want matches the table entry.
+		if want != c.want {
+			t.Errorf("test table mismatch: strings.ToLower(%q)=%q, table says %q", c.input, want, c.want)
 		}
 	}
 }

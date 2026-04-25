@@ -326,11 +326,13 @@ func (p Provider) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-// The input is lowercased and accepted unconditionally (any string is valid).
+// The input is whitespace-trimmed, lowercased, and accepted unconditionally
+// (any string is valid after trimming). Trimming ensures consistency with
+// IsValid(), which also rejects whitespace-only strings via TrimSpace.
 // Use provenance.IsKnown(p) at the call-site when catalog membership
 // must be enforced.
 func (p *Provider) UnmarshalText(b []byte) error {
-	*p = Provider(strings.ToLower(string(b)))
+	*p = Provider(strings.ToLower(strings.TrimSpace(string(b))))
 	return nil
 }
 
