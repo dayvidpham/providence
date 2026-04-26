@@ -2,8 +2,10 @@
 // dependency tracker. It contains all enum types, ID types, entity structs,
 // supporting types, and sentinel errors.
 //
-// This package has ZERO dependencies on the root provenance package or any
-// internal/ package. It is safe to import from anywhere within the module.
+// This package imports bestiary to support Provider.IsValid() catalog
+// membership checks. It is NOT zero-dependency — bestiary is a direct
+// dependency. This reverses the FIX-4 architectural decision from the
+// prior wave (UAT-2), which had imposed a zero-dep constraint on pkg/ptypes.
 //
 // Consumers of the library should continue to use the root
 // "github.com/dayvidpham/provenance" package, which re-exports everything
@@ -13,6 +15,8 @@ package ptypes
 import (
 	"fmt"
 	"strings"
+
+	"github.com/dayvidpham/bestiary"
 )
 
 // ---------------------------------------------------------------------------
@@ -301,8 +305,9 @@ func (a AgentKind) IsValid() bool {
 // for source compatibility, but callers must not assume the set is closed —
 // the bestiary catalog contains ~110 providers (and growing).
 //
-// For catalog membership checks use provenance.IsValid(p) from the root
-// provenance package, which delegates to bestiary.Provider(p).IsKnown().
+// For catalog membership checks use the IsValid() method, which delegates to
+// bestiary.Provider(p).IsKnown(). Case-sensitive: "anthropic" is valid,
+// "ANTHROPIC" is not.
 type Provider string
 
 const (
@@ -327,11 +332,24 @@ func (p Provider) MarshalText() ([]byte, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 // The input is whitespace-trimmed, lowercased, and accepted unconditionally
-// (any string is valid after trimming). Use provenance.IsValid(p) at the
-// call-site when catalog membership must be enforced.
+// (any string is valid after trimming). Use p.IsValid() at the call-site when
+// catalog membership must be enforced.
 func (p *Provider) UnmarshalText(b []byte) error {
 	*p = Provider(strings.ToLower(strings.TrimSpace(string(b))))
 	return nil
+}
+
+// IsValid reports whether p is a known provider per the bestiary catalog.
+// Equivalent to bestiary.Provider(p).IsKnown() — case-sensitive, exact match.
+//
+// Examples:
+//
+//	ptypes.Provider("anthropic").IsValid() // true
+//	ptypes.Provider("ANTHROPIC").IsValid() // false (case-sensitive)
+//	ptypes.Provider("").IsValid()          // false
+//	ptypes.Provider("   ").IsValid()       // false
+func (p Provider) IsValid() bool {
+	return bestiary.Provider(p).IsKnown()
 }
 
 // ---------------------------------------------------------------------------
