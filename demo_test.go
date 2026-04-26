@@ -550,12 +550,13 @@ func TestDemo_MultiProviderAgentsFromBestiary(t *testing.T) {
 	}
 
 	// Provider validation delegates to the bestiary catalog (URD R9): case-sensitive.
-	if !provenance.IsValid(provenance.ProviderAnthropic) {
-		t.Error("provenance.IsValid(ProviderAnthropic) should be true")
+	// p.IsValid() is the method on Provider (replaces package-level provenance.IsValid).
+	if !provenance.ProviderAnthropic.IsValid() {
+		t.Error("ProviderAnthropic.IsValid() should be true")
 	}
 	// "GOOGLE" (uppercase) is not in the bestiary catalog — validation is case-sensitive.
-	if provenance.IsValid(provenance.Provider("GOOGLE")) {
-		t.Error("provenance.IsValid(Provider(\"GOOGLE\")) should be false (catalog is case-sensitive)")
+	if provenance.Provider("GOOGLE").IsValid() {
+		t.Error("Provider(\"GOOGLE\").IsValid() should be false (catalog is case-sensitive)")
 	}
 
 	// Register agents from different providers — both from bestiary catalog

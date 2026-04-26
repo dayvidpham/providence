@@ -385,7 +385,7 @@ func TestProvider_EmptyMarshal(t *testing.T) {
 // and trailing whitespace before storing. Without trimming,
 // UnmarshalText("  anthropic  ") would store Provider("  anthropic  ") which
 // would never match a well-known constant — a subtle round-trip asymmetry.
-// Validation (catalog membership) is provenance.IsValid in the root package.
+// Validation (catalog membership) is done via p.IsValid() on the stored value.
 func TestProvider_WhitespaceUnmarshal(t *testing.T) {
 	cases := []struct {
 		input string
@@ -424,6 +424,71 @@ func TestProviderStringValues(t *testing.T) {
 		if got := c.p.String(); got != c.want {
 			t.Errorf("Provider(%q).String() = %q, want %q", string(c.p), got, c.want)
 		}
+	}
+}
+
+// TestProviderIsValid verifies that Provider.IsValid() delegates to the
+// bestiary catalog (URD R9). Catalog membership is case-sensitive.
+func TestProviderIsValid(t *testing.T) {
+	cases := []struct {
+		name  string
+		input ptypes.Provider
+		want  bool
+	}{
+		// Known catalog providers — must return true (case-sensitive lowercase)
+		{"anthropic", ptypes.Provider("anthropic"), true},
+		{"google", ptypes.Provider("google"), true},
+		{"openai", ptypes.Provider("openai"), true},
+		{"mistral", ptypes.Provider("mistral"), true},
+		{"local", ptypes.Provider("local"), true},
+
+		// Case-sensitive mismatches — must return false
+		{"ANTHROPIC uppercase", ptypes.Provider("ANTHROPIC"), false},
+		{"Anthropic mixed", ptypes.Provider("Anthropic"), false},
+		{"GOOGLE uppercase", ptypes.Provider("GOOGLE"), false},
+		{"OpenAI mixed", ptypes.Provider("OpenAI"), false},
+
+		// Empty and whitespace — must return false
+		{"empty string", ptypes.Provider(""), false},
+		{"spaces only", ptypes.Provider("   "), false},
+		{"tab and spaces", ptypes.Provider("  \t  "), false},
+
+		// Unknown providers — must return false
+		{"foo", ptypes.Provider("foo"), false},
+		{"nonexistent-vendor", ptypes.Provider("nonexistent-vendor"), false},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			got := c.input.IsValid()
+			if got != c.want {
+				t.Errorf("Provider(%q).IsValid() = %v, want %v", string(c.input), got, c.want)
+			}
+		})
+	}
+}
+
+// TestProviderIsValid_WellKnownConstants verifies that the four well-known
+// Provider constants are all valid per the bestiary catalog.
+func TestProviderIsValid_WellKnownConstants(t *testing.T) {
+	cases := []struct {
+		name string
+		p    ptypes.Provider
+		want bool
+	}{
+		{"ProviderAnthropic", ptypes.ProviderAnthropic, true},
+		{"ProviderGoogle", ptypes.ProviderGoogle, true},
+		{"ProviderOpenAI", ptypes.ProviderOpenAI, true},
+		{"ProviderLocal", ptypes.ProviderLocal, true},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			got := c.p.IsValid()
+			if got != c.want {
+				t.Errorf("Provider(%q).IsValid() = %v, want %v", string(c.p), got, c.want)
+			}
+		})
 	}
 }
 

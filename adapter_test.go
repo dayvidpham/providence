@@ -7,8 +7,11 @@ import (
 	"github.com/dayvidpham/provenance/pkg/ptypes"
 )
 
-// TestIsValid verifies that provenance.IsValid delegates to the bestiary catalog
-// (URD R9). Validation is catalog-membership, not merely non-empty-string.
+// TestProviderIsValid verifies that Provider.IsValid() delegates to the
+// bestiary catalog (URD R9). Validation is catalog-membership, not merely
+// non-empty-string. These tests exercise the type method directly, since
+// the package-level provenance.IsValid and provenance.IsKnown have been
+// removed in favour of p.IsValid().
 //
 // Key properties under test:
 //   - Known catalog providers return true (case-sensitive lowercase).
@@ -16,7 +19,7 @@ import (
 //   - Empty string returns false.
 //   - Whitespace-only strings return false.
 //   - Non-empty strings absent from the catalog return false.
-func TestIsValid(t *testing.T) {
+func TestProviderIsValid(t *testing.T) {
 	cases := []struct {
 		name  string
 		input ptypes.Provider
@@ -51,17 +54,18 @@ func TestIsValid(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			got := provenance.IsValid(c.input)
+			got := c.input.IsValid()
 			if got != c.want {
-				t.Errorf("provenance.IsValid(%q) = %v, want %v", string(c.input), got, c.want)
+				t.Errorf("Provider(%q).IsValid() = %v, want %v", string(c.input), got, c.want)
 			}
 		})
 	}
 }
 
-// TestIsValid_WellKnownConstants verifies the re-exported well-known Provider
-// constants are accepted by IsValid (since they ARE in the bestiary catalog).
-func TestIsValid_WellKnownConstants(t *testing.T) {
+// TestProviderIsValid_WellKnownConstants verifies the re-exported well-known
+// Provider constants are accepted by IsValid() (since they ARE in the
+// bestiary catalog).
+func TestProviderIsValid_WellKnownConstants(t *testing.T) {
 	cases := []struct {
 		name string
 		p    provenance.Provider
@@ -77,9 +81,9 @@ func TestIsValid_WellKnownConstants(t *testing.T) {
 	for _, c := range cases {
 		c := c
 		t.Run(c.name, func(t *testing.T) {
-			got := provenance.IsValid(c.p)
+			got := c.p.IsValid()
 			if got != c.want {
-				t.Errorf("provenance.IsValid(%q) = %v, want %v", string(c.p), got, c.want)
+				t.Errorf("Provider(%q).IsValid() = %v, want %v", string(c.p), got, c.want)
 			}
 		})
 	}

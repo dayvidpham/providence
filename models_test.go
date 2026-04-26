@@ -11,42 +11,6 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// IsKnown — catalog membership
-// ---------------------------------------------------------------------------
-
-func TestIsKnown_KnownProviders(t *testing.T) {
-	knownProviders := []provenance.Provider{
-		provenance.ProviderAnthropic,
-		provenance.ProviderGoogle,
-		provenance.ProviderOpenAI,
-	}
-	for _, p := range knownProviders {
-		if !provenance.IsKnown(p) {
-			t.Errorf("IsKnown(%q) = false, want true", p)
-		}
-	}
-}
-
-func TestIsKnown_UnknownProviders(t *testing.T) {
-	unknownProviders := []provenance.Provider{
-		"completely-unknown-vendor",
-		"not-a-real-provider",
-		"made-up-corp",
-	}
-	for _, p := range unknownProviders {
-		if provenance.IsKnown(p) {
-			t.Errorf("IsKnown(%q) = true, want false", p)
-		}
-	}
-}
-
-func TestIsKnown_EmptyString(t *testing.T) {
-	if provenance.IsKnown("") {
-		t.Error("IsKnown(\"\") = true, want false")
-	}
-}
-
-// ---------------------------------------------------------------------------
 // DefaultModelRegistry — Models()
 // ---------------------------------------------------------------------------
 
