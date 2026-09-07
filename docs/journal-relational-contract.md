@@ -1035,6 +1035,82 @@ roll back as a single SQL transaction. This is unchanged from the existing
 `STRICT`/transactional discipline already used across the live schema; the
 journal model does not relax it.
 
+#### Exact assignment conditions
+
+`AssignmentActiveCondition(AssignmentActiveAssertion)` adds the disjoint
+`ConditionAssignmentActive` arm. The assertion contains `AssignmentID`, `TaskID`,
+`SlotID`, `Occupant`, `AuthorityJournalID`, and `ParentAssignmentID`. The authority
+must identify that exact episode's **start**, not its operation anchor, material
+evidence, parent authority, or an alternate assignment on the same task. A nil
+parent asserts SQL NULL; a nonnil parent asserts exactly that nonempty ID.
+`Selector` and `AssertedJournalID` must be zero for this arm. Fact conditions must
+leave `AssignmentActive` nil. The sole registered slot remains
+`SlotOwnerResponsibility`; application roles are not assignment slots.
+
+Ordinary direct and borrowed `Apply` evaluate this condition after exact replay
+or conflict admission and before inserting effects, on the same write-owned
+SQLite transaction. The episode and every cited ancestor must have a linked
+assignment-start authority and no end transition. Ancestor starts must strictly
+precede their children; missing or cyclic lineage fails closed. Failure returns
+`ConditionFailure` with `ConditionAssignmentInactive`, the asserted start ID,
+and actual ID zero, leaving the operation absent and no partial journal or
+projection rows. This predicate does not consume/end an assignment, change the
+operation's authority, or grant cross-actor delegation. Applications must retain
+their actor/delegation checks independently.
+
+Composed allocation uses the same condition dispatcher in its existing SQL
+transaction. Its allocation rows have been staged at that point, but no
+supplemental effects or success checkpoint have been written. A condition failure
+rolls back those allocation rows too. Exact replay reconstructs receipts before
+mutable conditions. The existing DBOS adapter may durably record a typed domain
+**failure** outcome; it must not record a successful application checkpoint.
+
+Changing or removing an assertion under a committed OperationID conflicts.
+Exact retry returns the prior result even after later assignment revocation,
+without checking mutable conditions again. This applies to old fact-only
+operations too.
+
+#### Canonical compatibility and physical cost
+
+Fact-only operations retain **byte-identical** `provenance.mutation.v1` frames
+and SHA-256 digests. Only operations containing `ConditionAssignmentActive`
+select `MutationEncodingV2` (`provenance.mutation.v2`). Mixed fact/assignment
+lists use V2, preserving fact frames and ordered condition semantics. A V2
+envelope without an assignment arm and a V1 envelope with that arm are refused;
+there is no global promotion of old operations. V2 retains existing effect
+encoding. Its assignment arm has the kind frame followed by one
+`assignment-active` frame containing canonical JSON with exactly these members:
+
+```json
+{"assignment_id":"action","authority_journal_id":42,"occupant":"fixture--018f0000-0000-7000-8000-000000000002","parent_assignment_id":"parent","slot_id":"owner-responsibility","task_id":"fixture--018f0000-0000-7000-8000-000000000001"}
+```
+
+All members are required. Only `parent_assignment_id` admits null (explicit no
+parent). The canonical decoder rejects unknown/duplicate/missing/mixed/trailing
+fields, wrong shapes, invalid IDs and alternate scalar representations, using
+the existing strict JSON boundary and byte-identical re-encoding. These are
+canonical wire rules, not a new permissive JSON-to-Apply entry point.
+
+The independently authored `mutation_v2_assignment.bin` pins digest
+`ded32ff7e1c7d269f5f2d6ed0334c22e356c1c5685b07de9383790c70695279b`.
+The unchanged V1 `mutation_v1_v004.bin` pins digest
+`e3ea1ba027e09604e3c78638c5bd54eef1a4cb07719bf871054b65d39ae129b8`.
+New readers decode, verify integrity, reopen and replay both versions. V1-only
+readers reject the V2 version frame; once V2 operations exist, downgrade to a
+V1-only binary is unsupported. No schema migration is needed: existing operation
+columns already store an opaque nonempty encoding tag and canonical bytes.
+
+The predicate performs one indexed joined episode/start/end/authority/journal
+probe per lineage level. It never scans same-task alternatives or counts the
+whole episode table. With at most `MaxCanonicalConditions` (64) assertions, the
+query count is the sum of their lineage depths, **not total O(1)**; each probe's
+index cost still depends on SQLite index size. A depth-1/4/16 test measures
+64/256/1024 queries respectively for 64 assertions, and checks the actual SQLite
+query plan for five indexed searches with no scan. Other existing effect
+governance walks have their own cost and are not included in this predicate
+budget. No process mutex, new transaction, schema, or downstream private SQL is
+part of this API.
+
 ### 9.6 Concurrency contention point
 
 Two concurrent `Apply` calls contend at a single serialization point: SQLite's

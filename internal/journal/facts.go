@@ -66,9 +66,13 @@ const (
 	// current (highest JournalID) instance. Returns ConditionFailure if absent
 	// or if a newer instance exists (ConditionFactMissing or ConditionCurrentMismatch).
 	ConditionCurrentFact
+
+	// ConditionAssignmentActive binds one exact assignment and its active ancestry
+	// to the transaction that commits the effects. It does not end the assignment.
+	ConditionAssignmentActive
 )
 
-var conditionKindNames = [...]string{0: "<invalid>", 1: "ExactFact", 2: "CurrentFact"}
+var conditionKindNames = [...]string{0: "<invalid>", 1: "ExactFact", 2: "CurrentFact", 3: "AssignmentActive"}
 
 // String returns the diagnostic name for the condition kind.
 func (k ConditionKind) String() string {
@@ -86,18 +90,20 @@ type Condition struct {
 	Kind              ConditionKind
 	Selector          FactSelector
 	AssertedJournalID JournalID
+	AssignmentActive  *AssignmentActiveAssertion `json:",omitempty"`
 }
 
 // ConditionFailureReason is the diagnostic cause of a ConditionFailure.
 type ConditionFailureReason uint8
 
 const (
-	ConditionFactMissing     ConditionFailureReason = iota // no matching fact row exists
-	ConditionFactMismatch                                  // ExactFact: stored JournalID ≠ asserted
-	ConditionCurrentMismatch                               // CurrentFact: a newer instance exists
+	ConditionFactMissing        ConditionFailureReason = iota // no matching fact row exists
+	ConditionFactMismatch                                     // ExactFact: stored JournalID ≠ asserted
+	ConditionCurrentMismatch                                  // CurrentFact: a newer instance exists
+	ConditionAssignmentInactive                               // exact identity or active ancestry is not satisfied
 )
 
-var conditionFailureReasonNames = [...]string{"FactMissing", "FactMismatch", "CurrentMismatch"}
+var conditionFailureReasonNames = [...]string{"FactMissing", "FactMismatch", "CurrentMismatch", "AssignmentInactive"}
 
 // String returns the diagnostic name for the failure reason.
 func (r ConditionFailureReason) String() string {
@@ -108,7 +114,7 @@ func (r ConditionFailureReason) String() string {
 }
 
 func ConditionFailureReasons() []ConditionFailureReason {
-	return []ConditionFailureReason{ConditionFactMissing, ConditionFactMismatch, ConditionCurrentMismatch}
+	return []ConditionFailureReason{ConditionFactMissing, ConditionFactMismatch, ConditionCurrentMismatch, ConditionAssignmentInactive}
 }
 
 // ConditionFailure and ActivityConflict are defined in conflict.go.
@@ -307,15 +313,19 @@ func normalizeSelector(in FactSelector) (FactSelector, error) {
 }
 
 // normalizeCondition validates and normalizes one Condition for canonical encoding.
-// ConditionKind zero is invalid; callers must supply ConditionExactFact or ConditionCurrentFact.
+// ConditionKind zero is invalid; each named kind has a closed, disjoint arm.
 func normalizeCondition(in Condition, index int) (Condition, error) {
 	switch in.Kind {
+	case ConditionAssignmentActive:
+		return normalizeAssignmentCondition(in, index)
 	case ConditionExactFact, ConditionCurrentFact:
-		// valid nonzero kinds
+		if in.AssignmentActive != nil {
+			return Condition{}, canonicalMutationError(conditionName(index, "assignment-active"), "fact conditions cannot carry an assignment assertion", "leave AssignmentActive nil for fact conditions")
+		}
 	default:
 		return Condition{}, canonicalMutationError(conditionName(index, "kind"),
-			fmt.Sprintf("invalid condition kind %s (%d) — zero is reserved; use ConditionExactFact or ConditionCurrentFact", in.Kind, in.Kind),
-			"use ConditionExactFact (1) or ConditionCurrentFact (2)")
+			fmt.Sprintf("invalid condition kind %s (%d) — zero is reserved", in.Kind, in.Kind),
+			"use ConditionExactFact (1), ConditionCurrentFact (2), or ConditionAssignmentActive (3)")
 	}
 	if in.AssertedJournalID < 0 {
 		return Condition{}, canonicalMutationError(conditionName(index, "asserted-journal-id"), "journal id must be non-negative", "use a positive committed journal row id or 0 to assert absence")

@@ -157,8 +157,8 @@ func semanticMutationFamilyKind(sort EffectSort) (EventKind, bool) {
 
 // semanticConditionKinds returns the closed set of ConditionKind values.
 func semanticConditionKinds() []ConditionKind {
-	// ConditionKind zero is invalid; return only the two valid nonzero constants.
-	return []ConditionKind{ConditionExactFact, ConditionCurrentFact}
+	// ConditionKind zero is invalid.
+	return []ConditionKind{ConditionExactFact, ConditionCurrentFact, ConditionAssignmentActive}
 }
 
 // SemanticEffectSorts returns the closed set of EffectSort values.
@@ -208,6 +208,9 @@ func cloneCanonicalEffect(e Effect) Effect {
 
 // cloneCanonicalCondition deep-copies a Condition for safe external return.
 func cloneCanonicalCondition(in Condition, _ int) Condition {
+	if in.Kind == ConditionAssignmentActive && in.AssignmentActive != nil {
+		return AssignmentActiveCondition(*in.AssignmentActive)
+	}
 	out := Condition{
 		Kind:              in.Kind,
 		AssertedJournalID: in.AssertedJournalID,
@@ -878,6 +881,15 @@ func validateRawCanonicalEffectBounds(effect Effect, index int) error {
 // encodeSemanticCondition encodes one normalized Condition to the canonical writer.
 func encodeSemanticCondition(w *canonicalWriter, c Condition, index int) {
 	w.rawField(conditionName(index, "kind"), []byte(strconv.Itoa(int(c.Kind))))
+	if c.Kind == ConditionAssignmentActive {
+		payload, err := encodeAssignmentAssertion(*c.AssignmentActive)
+		if err != nil {
+			w.err = err
+			return
+		}
+		w.rawField(conditionName(index, "assignment-active"), payload)
+		return
+	}
 	w.rawField(conditionName(index, "fact-kind"), []byte(strconv.Itoa(int(c.Selector.Kind))))
 	w.rawField(conditionName(index, "task-scope"), []byte(strconv.Itoa(int(c.Selector.Filter.TaskScope.Kind))))
 	if c.Selector.Filter.TaskScope.Kind == FactTaskExact {
@@ -916,6 +928,17 @@ func decodeSemanticCondition(r *canonicalReader, index int) (Condition, error) {
 		return c, canonicalMutationError(conditionName(index, "kind"), fmt.Sprintf("invalid condition kind %q", raw), "use a declared ConditionKind")
 	}
 	c.Kind = ConditionKind(n)
+	if c.Kind == ConditionAssignmentActive {
+		payload, err := r.rawField(conditionName(index, "assignment-active"))
+		if err != nil {
+			return c, err
+		}
+		c.AssignmentActive, err = decodeAssignmentAssertion(payload)
+		if err != nil {
+			return c, canonicalMutationError(conditionName(index, "assignment-active"), err.Error(), "restore the complete closed assignment assertion object")
+		}
+		return normalizeCondition(c, index)
+	}
 	raw, err = r.rawField(conditionName(index, "fact-kind"))
 	if err != nil {
 		return c, err
@@ -1182,6 +1205,20 @@ func CompareOperationIdentity(operationID OperationID, stored, candidate Operati
 func conditionsEqual(a, b Condition) bool {
 	if a.Kind != b.Kind || a.AssertedJournalID != b.AssertedJournalID {
 		return false
+	}
+	if a.Kind == ConditionAssignmentActive {
+		if a.AssignmentActive == nil || b.AssignmentActive == nil {
+			return a.AssignmentActive == b.AssignmentActive
+		}
+		x, y := *a.AssignmentActive, *b.AssignmentActive
+		if (x.ParentAssignmentID == nil) != (y.ParentAssignmentID == nil) {
+			return false
+		}
+		if x.ParentAssignmentID != nil && *x.ParentAssignmentID != *y.ParentAssignmentID {
+			return false
+		}
+		x.ParentAssignmentID, y.ParentAssignmentID = nil, nil
+		return x == y
 	}
 	if a.Selector.Kind != b.Selector.Kind {
 		return false

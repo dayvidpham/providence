@@ -58,24 +58,25 @@ type (
 	MutationEncodingVersion = journal.MutationEncodingVersion
 
 	// Condition types (§9.5 pre-conditions).
-	FactTaskScopeKind      = journal.FactTaskScopeKind
-	FactTaskScope          = journal.FactTaskScope
-	FactFilter             = journal.FactFilter
-	FactKind               = journal.FactKind
-	FactSelector           = journal.FactSelector
-	ConditionKind          = journal.ConditionKind
-	Condition              = journal.Condition
-	ConditionFailureReason = journal.ConditionFailureReason
-	ConditionFailure       = journal.ConditionFailure
-	FactPageRequest        = journal.FactPageRequest
-	DecisionQuery          = journal.DecisionQuery
-	EvidenceQuery          = journal.EvidenceQuery
-	FactCursor             = journal.FactCursor
-	DecisionRow            = journal.DecisionRow
-	EvidenceRow            = journal.EvidenceRow
-	DecisionPage           = journal.DecisionPage
-	EvidencePage           = journal.EvidencePage
-	FactQueryAPI           = journal.FactQueryAPI
+	FactTaskScopeKind         = journal.FactTaskScopeKind
+	FactTaskScope             = journal.FactTaskScope
+	FactFilter                = journal.FactFilter
+	FactKind                  = journal.FactKind
+	FactSelector              = journal.FactSelector
+	ConditionKind             = journal.ConditionKind
+	Condition                 = journal.Condition
+	ConditionFailureReason    = journal.ConditionFailureReason
+	AssignmentActiveAssertion = journal.AssignmentActiveAssertion
+	ConditionFailure          = journal.ConditionFailure
+	FactPageRequest           = journal.FactPageRequest
+	DecisionQuery             = journal.DecisionQuery
+	EvidenceQuery             = journal.EvidenceQuery
+	FactCursor                = journal.FactCursor
+	DecisionRow               = journal.DecisionRow
+	EvidenceRow               = journal.EvidenceRow
+	DecisionPage              = journal.DecisionPage
+	EvidencePage              = journal.EvidencePage
+	FactQueryAPI              = journal.FactQueryAPI
 	// ActivityConflict is the typed conflict for ActivityCreate folds (later vertical).
 	ActivityConflict = journal.ActivityConflict
 
@@ -112,6 +113,7 @@ const (
 
 	OrdinalV1CodecName            = journal.OrdinalV1CodecName
 	MutationEncodingV1            = journal.MutationEncodingV1
+	MutationEncodingV2            = journal.MutationEncodingV2
 	MaxCanonicalEffects           = journal.MaxCanonicalEffects
 	MaxCanonicalContextsPerEffect = journal.MaxCanonicalContextsPerEffect
 	MaxCanonicalFieldBytes        = journal.MaxCanonicalFieldBytes
@@ -128,11 +130,13 @@ const (
 	FactDecision     = journal.FactDecision
 	FactEvidence     = journal.FactEvidence
 
-	ConditionExactFact       = journal.ConditionExactFact
-	ConditionCurrentFact     = journal.ConditionCurrentFact
-	ConditionFactMissing     = journal.ConditionFactMissing
-	ConditionFactMismatch    = journal.ConditionFactMismatch
-	ConditionCurrentMismatch = journal.ConditionCurrentMismatch
+	ConditionExactFact          = journal.ConditionExactFact
+	ConditionAssignmentActive   = journal.ConditionAssignmentActive
+	ConditionAssignmentInactive = journal.ConditionAssignmentInactive
+	ConditionCurrentFact        = journal.ConditionCurrentFact
+	ConditionFactMissing        = journal.ConditionFactMissing
+	ConditionFactMismatch       = journal.ConditionFactMismatch
+	ConditionCurrentMismatch    = journal.ConditionCurrentMismatch
 
 	// Authority-kind and assignment-lifecycle closed enums (§4).
 	AuthorityKindBootstrap  = journal.AuthorityKindBootstrap
@@ -234,10 +238,11 @@ var (
 	DecodeCanonicalMutation   = journal.DecodeCanonicalMutation
 	ValidateResultSlotBinding = journal.ValidateResultSlotBinding
 	// ConflictAxes returns the closed five-axis set. All axes are nonzero.
-	ConflictAxes            = journal.ConflictAxes
-	FactTaskScopeKinds      = journal.FactTaskScopeKinds
-	ConditionKinds          = journal.ConditionKinds
-	ConditionFailureReasons = journal.ConditionFailureReasons
+	ConflictAxes              = journal.ConflictAxes
+	FactTaskScopeKinds        = journal.FactTaskScopeKinds
+	ConditionKinds            = journal.ConditionKinds
+	ConditionFailureReasons   = journal.ConditionFailureReasons
+	AssignmentActiveCondition = journal.AssignmentActiveCondition
 )
 
 // Status-FSM typed error + sentinel (§8.1).

@@ -178,6 +178,12 @@ func validateConditionFailure(failure *CanonicalApplyFailure) error {
 	if *failure.ConditionIndex < 0 || *failure.ConditionIndex >= MaxCanonicalConditions {
 		return &conflictMetadataError{field: DBOSDiagFieldConditionIndex, reason: fmt.Sprintf("condition_index %d is outside 0..%d", *failure.ConditionIndex, MaxCanonicalConditions-1)}
 	}
+	if *failure.ConditionKind == journal.ConditionAssignmentActive {
+		if *failure.ConditionReason != journal.ConditionAssignmentInactive || *failure.AssertedJournalID <= 0 || *failure.ActualJournalID != 0 {
+			return &conflictMetadataError{field: DBOSDiagFieldConditionReason, reason: "AssignmentActive requires AssignmentInactive, a positive exact start authority, and actual_journal_id 0"}
+		}
+		return nil
+	}
 	if *failure.ConditionKind != journal.ConditionExactFact && *failure.ConditionKind != journal.ConditionCurrentFact {
 		return &conflictMetadataError{field: DBOSDiagFieldConditionKind, reason: fmt.Sprintf("invalid condition_kind %d", *failure.ConditionKind)}
 	}

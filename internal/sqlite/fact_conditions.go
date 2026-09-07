@@ -9,8 +9,8 @@ import (
 	"github.com/dayvidpham/provenance/internal/journal"
 )
 
-// fact_conditions.go evaluates the transaction-local ExactFact and CurrentFact
-// conditions defined in §9.5. Evaluation runs inside the Apply write transaction
+// fact_conditions.go dispatches transaction-local fact and assignment conditions
+// defined in §9.5. Evaluation runs inside the Apply write transaction
 // after the exact-replay lookup and before any effects are folded, so conditions
 // observe the same snapshot as the effects they gate.
 //
@@ -19,8 +19,9 @@ import (
 // The loser finds the winner's committed fact as the current row and receives
 // ConditionFailure rather than BUSY_SNAPSHOT.
 //
-// All evaluation is bounded (MaxCanonicalConditions = 64); the canonical layer
-// enforces this before Apply is called.
+// Condition count is bounded (MaxCanonicalConditions = 64) by the canonical
+// layer. An assignment assertion also walks its exact ancestry; depth is not
+// bounded by the condition count.
 
 // checkConditions evaluates conditions through the caller-owned connection
 // scope and returns the first typed *journal.ConditionFailure.
@@ -48,6 +49,9 @@ func checkConditionsInTransaction(ctx context.Context, reader fusedtx.SQLReader,
 }
 
 func checkOneConditionInTransaction(ctx context.Context, reader fusedtx.SQLReader, verify selectedFactVerifier, cond journal.Condition, index int) error {
+	if cond.Kind == journal.ConditionAssignmentActive {
+		return checkAssignmentActiveInTransaction(ctx, reader, cond, index)
+	}
 	binding, err := buildFactMatchBinding(cond.Selector, 0, 0)
 	if err != nil {
 		return fmt.Errorf("condition[%d] selector binding: %w", index, err)
