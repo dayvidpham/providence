@@ -14,11 +14,12 @@ import (
 	"github.com/dayvidpham/provenance/pkg/ptypes"
 )
 
-// MutationEncodingVersion identifies the one canonical mutation representation.
+// MutationEncodingVersion identifies a registered canonical mutation representation.
 type MutationEncodingVersion uint8
 
 const (
 	MutationEncodingV1 MutationEncodingVersion = iota + 1
+	MutationEncodingV2
 )
 
 type inspectedMutationEncodingTag struct{ text string }
@@ -26,6 +27,9 @@ type inspectedMutationEncodingTag struct{ text string }
 func (v MutationEncodingVersion) String() string {
 	if v == MutationEncodingV1 {
 		return canonicalMutationV1WireTag
+	}
+	if v == MutationEncodingV2 {
+		return canonicalMutationV2WireTag
 	}
 	return fmt.Sprintf("MutationEncodingVersion(%d)", v)
 }
@@ -36,14 +40,30 @@ type canonicalCodecDescriptor struct {
 }
 
 const canonicalMutationV1WireTag = "provenance.mutation.v1"
+const canonicalMutationV2WireTag = "provenance.mutation.v2"
 
 var canonicalV1Descriptor = canonicalCodecDescriptor{version: MutationEncodingV1, wireTag: canonicalMutationV1WireTag}
+var canonicalV2Descriptor = canonicalCodecDescriptor{version: MutationEncodingV2, wireTag: canonicalMutationV2WireTag}
+
+// Fact-only operations keep their original V1 bytes and digest. V2 is selected
+// only by the new disjoint arm, including when fact conditions accompany it.
+func descriptorForConditions(conditions []Condition) canonicalCodecDescriptor {
+	for _, condition := range conditions {
+		if condition.Kind == ConditionAssignmentActive {
+			return canonicalV2Descriptor
+		}
+	}
+	return canonicalV1Descriptor
+}
 
 func inspectMutationEncodingTag(text string) inspectedMutationEncodingTag {
 	return inspectedMutationEncodingTag{text: text}
 }
 
 func (tag inspectedMutationEncodingTag) version() (MutationEncodingVersion, bool) {
+	if tag.text == canonicalMutationV2WireTag {
+		return MutationEncodingV2, true
+	}
 	return MutationEncodingV1, tag.text == canonicalMutationV1WireTag
 }
 
@@ -53,7 +73,7 @@ func (tag inspectedMutationEncodingTag) MatchesStoredText(stored string) bool {
 	return tag.text == stored
 }
 
-// RegisteredVersion reports the sole supported evolved V1 tag.
+// RegisteredVersion reports whether the inspected tag is supported by this build.
 func (tag inspectedMutationEncodingTag) RegisteredVersion() (MutationEncodingVersion, bool) {
 	return tag.version()
 }
@@ -196,11 +216,11 @@ func (codec canonicalV1Codec) diagnosticField(ref canonicalV1FieldRef) string {
 }
 
 // Canonicalize is the sole public preparation boundary. It validates and normalizes
-// the OperationInput, writes the canonical V1 bytes, and strictly decodes them
+// the OperationInput, selects its canonical version, and strictly decodes the bytes
 // once to produce the CanonicalMutation the write path must execute. No caller
 // outside this package should call prepareMutationV1 or prepareMutationV1Operation directly.
 func Canonicalize(in OperationInput) (CanonicalMutation, error) {
-	return prepareMutationV1Operation(in, canonicalV1Descriptor)
+	return prepareMutationV1Operation(in, descriptorForConditions(in.Conditions))
 }
 
 func prepareMutationV1(effects []Effect, descriptor canonicalCodecDescriptor) (CanonicalMutation, error) {
@@ -291,9 +311,17 @@ func (w *canonicalSizeCounter) Write(p []byte) (int, error) {
 // order is fixed, so unknown, missing, duplicate, and trailing fields all fail closed.
 func DecodeCanonicalMutation(data []byte) (CanonicalMutation, error) {
 	if len(data) > MaxCanonicalMutationBytes {
-		return CanonicalMutation{}, canonicalMutationError("mutation", fmt.Sprintf("%d bytes exceeds maximum %d", len(data), MaxCanonicalMutationBytes), "restore bounded evolved V1 bytes")
+		return CanonicalMutation{}, canonicalMutationError("mutation", fmt.Sprintf("%d bytes exceeds maximum %d", len(data), MaxCanonicalMutationBytes), "restore bounded canonical bytes")
 	}
-	mutation, err := decodeCanonicalMutationV1(data, MutationEncodingV1, canonicalMutationV1WireTag)
+	tag, err := InspectCanonicalMutationEncodingVersion(data)
+	if err != nil {
+		return CanonicalMutation{}, err
+	}
+	version, supported := tag.RegisteredVersion()
+	if !supported {
+		return CanonicalMutation{}, canonicalMutationError("version", "unsupported mutation encoding", "use a reader that supports the stored canonical version")
+	}
+	mutation, err := decodeCanonicalMutationV1(data, version, version.String())
 	if err == nil {
 		return mutation, nil
 	}
@@ -326,8 +354,11 @@ func InspectCanonicalMutationEncodingVersion(data []byte) (inspectedMutationEnco
 func decodeCanonicalMutationV1(data []byte, versionID MutationEncodingVersion, wireTag string) (CanonicalMutation, error) {
 	r := canonicalReader{codec: mutationV1Codec, r: bufio.NewReader(bytes.NewReader(data))}
 	version, err := r.field(envelopeField(envelopeVersion))
-	if err != nil || versionID != MutationEncodingV1 || string(version) != wireTag {
-		return CanonicalMutation{}, fmt.Errorf("provenance: decode V1 canonical mutation: invalid version frame %q: %w", version, err)
+	if err != nil {
+		return CanonicalMutation{}, err
+	}
+	if !IsSupportedMutationEncoding(versionID) || string(version) != wireTag {
+		return CanonicalMutation{}, canonicalMutationError("version", fmt.Sprintf("version frame %q does not match the selected codec", version), "use a reader supporting the exact stored encoding version")
 	}
 	rawConditionCount, err := r.rawField("condition-count")
 	if err != nil {
@@ -343,6 +374,9 @@ func decodeCanonicalMutationV1(data []byte, versionID MutationEncodingVersion, w
 		if err != nil {
 			return CanonicalMutation{}, err
 		}
+	}
+	if descriptorForConditions(conditions).version != versionID {
+		return CanonicalMutation{}, canonicalMutationError("version", "condition set does not belong to this wire version", "use V1 for fact-only conditions and V2 only when AssignmentActive is present")
 	}
 	rawCount, err := r.field(envelopeField(envelopeEffectCount))
 	if err != nil {
@@ -370,7 +404,7 @@ func decodeCanonicalMutationV1(data []byte, versionID MutationEncodingVersion, w
 		return CanonicalMutation{}, err
 	}
 	if !bytes.Equal(reencoded, data) {
-		return CanonicalMutation{}, canonicalMutationError("wire", "decoded semantics do not re-encode to the identical canonical bytes", "use sorted unique collections, canonical JSON/scalars, and the exact evolved V1 field representation")
+		return CanonicalMutation{}, canonicalMutationError("wire", "decoded semantics do not re-encode to the identical canonical bytes", "use sorted unique collections, canonical JSON/scalars, and the exact registered field representation")
 	}
 	digest := sha256.Sum256(data)
 	return CanonicalMutation{
@@ -383,9 +417,10 @@ func decodeCanonicalMutationV1(data []byte, versionID MutationEncodingVersion, w
 }
 
 func encodeNormalizedMutation(conditions []Condition, effects []Effect) ([]byte, error) {
+	descriptor := descriptorForConditions(conditions)
 	counter := &canonicalSizeCounter{limit: MaxCanonicalMutationBytes}
 	w := canonicalWriter{codec: mutationV1Codec, w: counter}
-	writeCanonicalEnvelopeHeader(&w, len(conditions), len(effects), canonicalMutationV1WireTag)
+	writeCanonicalEnvelopeHeader(&w, len(conditions), len(effects), descriptor.wireTag)
 	for i := range conditions {
 		encodeSemanticCondition(&w, conditions[i], i)
 	}
@@ -401,7 +436,7 @@ func encodeNormalizedMutation(conditions []Condition, effects []Effect) ([]byte,
 	var out bytes.Buffer
 	out.Grow(counter.size)
 	w = canonicalWriter{codec: mutationV1Codec, w: &out}
-	writeCanonicalEnvelopeHeader(&w, len(conditions), len(effects), canonicalMutationV1WireTag)
+	writeCanonicalEnvelopeHeader(&w, len(conditions), len(effects), descriptor.wireTag)
 	for i := range conditions {
 		encodeSemanticCondition(&w, conditions[i], i)
 	}
@@ -417,9 +452,9 @@ func encodeNormalizedMutation(conditions []Condition, effects []Effect) ([]byte,
 	return out.Bytes(), nil
 }
 
-// IsSupportedMutationEncoding reports only the intentionally evolved V1.
+// IsSupportedMutationEncoding includes legacy V1 and assignment-condition V2.
 func IsSupportedMutationEncoding(version MutationEncodingVersion) bool {
-	return version == MutationEncodingV1
+	return version == MutationEncodingV1 || version == MutationEncodingV2
 }
 
 type canonicalWriter struct {

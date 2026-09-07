@@ -77,6 +77,9 @@ type ConditionFailure struct {
 }
 
 func (e *ConditionFailure) Error() string {
+	if e.Kind == ConditionAssignmentActive {
+		return fmt.Sprintf("%v: condition[%d] exact assignment start authority %d is missing, mismatched, ended, or has inactive ancestry — where: Apply transaction-local assignment condition; when: after replay admission and before supplemental effects; impact: the entire operation was not committed; fix: resolve the exact active assignment and parent identity and submit a new operation, or retry the identical committed operation", ErrConditionFailed, e.Index, e.AssertedJournalID)
+	}
 	return fmt.Sprintf(
 		"%v: condition[%d] kind=%s asserted journal row %d, observed %d (reason=%s) — "+
 			"where: Apply transaction-local condition evaluation; when: after exact replay lookup "+
