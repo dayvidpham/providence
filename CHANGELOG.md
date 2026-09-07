@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.2.0 - 2026-09-07
+
+### Added
+
+- `AssignmentActiveCondition` and `AssignmentActiveAssertion` check an exact
+  assignment's start authority, task, slot, occupant, parent identity and active
+  ancestry in the same write transaction as the guarded operation. The condition
+  does not end the assignment. Indexed query count is the sum of asserted lineage
+  depths, not constant; see the [atomicity contract](docs/journal-relational-contract.md#95-fail-closed-atomicity).
+
+### Compatibility
+
+- Canonical mutation V2 is selected only for operations containing the new
+  assignment-active condition. Existing V1 bytes, digests and exact replay are
+  preserved. The new reader accepts existing supported databases without a schema
+  migration. Once V2 operations are recorded, V1-only readers refuse them;
+  downgrading those histories to a V1-only reader is unsupported.
+
 ## v0.1.1 - 2026-09-06
 
 ### Fixed
